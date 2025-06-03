@@ -4,5 +4,45 @@ services:
     autowire: true      # Automatically injects dependencies in your services.
     autoconfigure: true # Automatically registers your services as commands, event subscribers, etc.
 
-  Tourze\CouponCommandBundle\Repository\:
-    resource: '../../Repository/'
+  Tourze\CouponCommandBundle\:
+    resource: '../../'
+    exclude:
+      - '../../DependencyInjection/'
+      - '../../Entity/'
+      - '../../Tests/'
+
+  # 手动注册Repository服务
+  Tourze\CouponCommandBundle\Repository\CommandConfigRepository:
+    arguments:
+      $registry: '@doctrine'
+
+  Tourze\CouponCommandBundle\Repository\CommandLimitRepository:
+    arguments:
+      $registry: '@doctrine'
+
+  Tourze\CouponCommandBundle\Repository\CommandUsageRecordRepository:
+    arguments:
+      $registry: '@doctrine'
+
+  # 注册口令验证服务
+  Tourze\CouponCommandBundle\Service\CommandValidationService:
+    arguments:
+      $entityManager: '@doctrine.orm.entity_manager'
+      $commandConfigRepository: '@Tourze\CouponCommandBundle\Repository\CommandConfigRepository'
+      $usageRecordRepository: '@Tourze\CouponCommandBundle\Repository\CommandUsageRecordRepository'
+
+  # 注册口令管理服务
+  Tourze\CouponCommandBundle\Service\CommandManagementService:
+    arguments:
+      $entityManager: '@doctrine.orm.entity_manager'
+      $commandConfigRepository: '@Tourze\CouponCommandBundle\Repository\CommandConfigRepository'
+      $commandLimitRepository: '@Tourze\CouponCommandBundle\Repository\CommandLimitRepository'
+
+  # 注册JsonRPC方法
+  Tourze\CouponCommandBundle\Procedure\ValidateCouponCommand:
+    tags:
+      - { name: 'json_rpc.procedure' }
+
+  Tourze\CouponCommandBundle\Procedure\UseCouponCommand:
+    tags:
+      - { name: 'json_rpc.procedure' }
