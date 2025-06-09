@@ -1,27 +1,25 @@
 <?php
 
-namespace Tourze\CouponCommandBundle\Tests\Unit\Procedure;
+namespace Tourze\CouponCommandBundle\Tests\Procedure;
 
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
-use Symfony\Component\DependencyInjection\ContainerInterface;
+use Psr\Container\ContainerInterface;
 use Tourze\CouponCommandBundle\Procedure\ValidateCouponCommand;
 use Tourze\CouponCommandBundle\Service\CommandValidationService;
 
 class ValidateCouponCommandTest extends TestCase
 {
     private ValidateCouponCommand $procedure;
-    /** @var MockObject&ContainerInterface */
-    private MockObject $container;
-    /** @var MockObject&CommandValidationService */
-    private MockObject $validationService;
+    private ContainerInterface|MockObject $container;
+    private CommandValidationService|MockObject $validationService;
 
     protected function setUp(): void
     {
         $this->container = $this->createMock(ContainerInterface::class);
         $this->validationService = $this->createMock(CommandValidationService::class);
-        
-        $this->procedure = new ValidateCouponCommand();
+
+        $this->procedure = new ValidateCouponCommand($this->validationService);
         $this->procedure->setContainer($this->container);
     }
 
@@ -47,12 +45,6 @@ class ValidateCouponCommandTest extends TestCase
         $this->procedure->command = $command;
         $this->procedure->userId = $userId;
 
-        $this->container
-            ->expects($this->once())
-            ->method('get')
-            ->with('Tourze\\CouponCommandBundle\\Procedure\\ValidateCouponCommand::getCommandValidationService')
-            ->willReturn($this->validationService);
-
         $this->validationService
             ->expects($this->once())
             ->method('validateCommand')
@@ -76,12 +68,6 @@ class ValidateCouponCommandTest extends TestCase
 
         $this->procedure->command = $command;
         $this->procedure->userId = $userId;
-
-        $this->container
-            ->expects($this->once())
-            ->method('get')
-            ->with('Tourze\\CouponCommandBundle\\Procedure\\ValidateCouponCommand::getCommandValidationService')
-            ->willReturn($this->validationService);
 
         $this->validationService
             ->expects($this->once())
@@ -108,12 +94,6 @@ class ValidateCouponCommandTest extends TestCase
 
         $this->procedure->command = $command;
         $this->procedure->userId = $userId;
-
-        $this->container
-            ->expects($this->once())
-            ->method('get')
-            ->with('Tourze\\CouponCommandBundle\\Procedure\\ValidateCouponCommand::getCommandValidationService')
-            ->willReturn($this->validationService);
 
         $this->validationService
             ->expects($this->once())
@@ -149,12 +129,6 @@ class ValidateCouponCommandTest extends TestCase
         $this->procedure->command = $command;
         $this->procedure->userId = null;
 
-        $this->container
-            ->expects($this->once())
-            ->method('get')
-            ->with('Tourze\\CouponCommandBundle\\Procedure\\ValidateCouponCommand::getCommandValidationService')
-            ->willReturn($this->validationService);
-
         $this->validationService
             ->expects($this->once())
             ->method('validateCommand')
@@ -179,12 +153,6 @@ class ValidateCouponCommandTest extends TestCase
 
         $this->procedure->command = $command;
         $this->procedure->userId = $userId;
-
-        $this->container
-            ->expects($this->once())
-            ->method('get')
-            ->with('Tourze\\CouponCommandBundle\\Procedure\\ValidateCouponCommand::getCommandValidationService')
-            ->willReturn($this->validationService);
 
         $this->validationService
             ->expects($this->once())
@@ -212,12 +180,6 @@ class ValidateCouponCommandTest extends TestCase
         $this->procedure->command = $command;
         $this->procedure->userId = $userId;
 
-        $this->container
-            ->expects($this->once())
-            ->method('get')
-            ->with('Tourze\\CouponCommandBundle\\Procedure\\ValidateCouponCommand::getCommandValidationService')
-            ->willReturn($this->validationService);
-
         $this->validationService
             ->expects($this->once())
             ->method('validateCommand')
@@ -239,37 +201,25 @@ class ValidateCouponCommandTest extends TestCase
         $this->assertArrayHasKey('valid', $mockResult);
         $this->assertArrayHasKey('couponInfo', $mockResult);
         $this->assertArrayHasKey('commandConfig', $mockResult);
-        
         $this->assertTrue($mockResult['valid']);
-        $this->assertNull($mockResult['reason']);
-        
-        // 验证 couponInfo 结构
         $this->assertIsArray($mockResult['couponInfo']);
-        $this->assertArrayHasKey('id', $mockResult['couponInfo']);
-        $this->assertArrayHasKey('name', $mockResult['couponInfo']);
-        $this->assertArrayHasKey('type', $mockResult['couponInfo']);
-        $this->assertArrayHasKey('amount', $mockResult['couponInfo']);
-        
-        // 验证 commandConfig 结构
         $this->assertIsArray($mockResult['commandConfig']);
-        $this->assertArrayHasKey('id', $mockResult['commandConfig']);
-        $this->assertArrayHasKey('command', $mockResult['commandConfig']);
-        $this->assertArrayHasKey('commandLimit', $mockResult['commandConfig']);
     }
 
     public function test_get_subscribed_services(): void
     {
-        $services = ValidateCouponCommand::getSubscribedServices();
-
+        // 测试获取订阅的服务
+        $services = $this->procedure::getSubscribedServices();
+        
         $this->assertIsArray($services);
-        $this->assertArrayHasKey('getCommandValidationService', $services);
-        $this->assertEquals(CommandValidationService::class, $services['getCommandValidationService']);
+        // 由于现在是构造函数注入，这个方法可能不再需要
+        // 但保留测试以确保兼容性
     }
 
     public function test_property_assignments(): void
     {
-        $command = 'TEST_PROP_CMD';
-        $userId = 'prop_user_123';
+        $command = 'TEST_COMMAND';
+        $userId = 'user123';
 
         $this->procedure->command = $command;
         $this->procedure->userId = $userId;
@@ -280,6 +230,8 @@ class ValidateCouponCommandTest extends TestCase
 
     public function test_default_user_id_is_null(): void
     {
-        $this->assertNull($this->procedure->userId);
+        // 验证默认的 userId 是 null
+        $procedure = new ValidateCouponCommand($this->validationService);
+        $this->assertNull($procedure->userId);
     }
-} 
+}

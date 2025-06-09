@@ -1,6 +1,6 @@
 <?php
 
-namespace Tourze\CouponCommandBundle\Tests\Unit\Repository;
+namespace Tourze\CouponCommandBundle\Tests\Repository;
 
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\ORM\EntityManagerInterface;
@@ -13,16 +13,14 @@ use Tourze\CouponCommandBundle\Repository\CommandUsageRecordRepository;
 class CommandUsageRecordRepositoryTest extends TestCase
 {
     private CommandUsageRecordRepository $repository;
-    /** @var MockObject&ManagerRegistry */
-    private MockObject $managerRegistry;
-    /** @var MockObject&EntityManagerInterface */
-    private MockObject $entityManager;
+    private ManagerRegistry|MockObject $managerRegistry;
+    private EntityManagerInterface|MockObject $entityManager;
 
     protected function setUp(): void
     {
         $this->managerRegistry = $this->createMock(ManagerRegistry::class);
         $this->entityManager = $this->createMock(EntityManagerInterface::class);
-        
+
         $this->managerRegistry
             ->method('getManagerForClass')
             ->with(CommandUsageRecord::class)
@@ -46,7 +44,7 @@ class CommandUsageRecordRepositoryTest extends TestCase
         // 通过反射检查 Repository 是否正确配置了实体类
         $reflection = new \ReflectionClass($this->repository);
         $parentReflection = $reflection->getParentClass();
-        
+
         $this->assertTrue($parentReflection->getName() === ServiceEntityRepository::class);
     }
 
@@ -63,11 +61,11 @@ class CommandUsageRecordRepositoryTest extends TestCase
     {
         $reflection = new \ReflectionMethod($this->repository, 'findByUserId');
         $parameters = $reflection->getParameters();
-        
+
         $this->assertCount(1, $parameters);
         $this->assertEquals('userId', $parameters[0]->getName());
         $this->assertEquals('string', $parameters[0]->getType()->getName());
-        
+
         $returnType = $reflection->getReturnType();
         $this->assertNotNull($returnType);
         $this->assertEquals('array', $returnType->getName());
@@ -77,11 +75,11 @@ class CommandUsageRecordRepositoryTest extends TestCase
     {
         $reflection = new \ReflectionMethod($this->repository, 'findByCommandConfigId');
         $parameters = $reflection->getParameters();
-        
+
         $this->assertCount(1, $parameters);
         $this->assertEquals('commandConfigId', $parameters[0]->getName());
         $this->assertEquals('string', $parameters[0]->getType()->getName());
-        
+
         $returnType = $reflection->getReturnType();
         $this->assertNotNull($returnType);
         $this->assertEquals('array', $returnType->getName());
@@ -91,13 +89,13 @@ class CommandUsageRecordRepositoryTest extends TestCase
     {
         $reflection = new \ReflectionMethod($this->repository, 'countByUserAndCommandConfig');
         $parameters = $reflection->getParameters();
-        
+
         $this->assertCount(2, $parameters);
         $this->assertEquals('userId', $parameters[0]->getName());
         $this->assertEquals('string', $parameters[0]->getType()->getName());
         $this->assertEquals('commandConfigId', $parameters[1]->getName());
         $this->assertEquals('string', $parameters[1]->getType()->getName());
-        
+
         $returnType = $reflection->getReturnType();
         $this->assertNotNull($returnType);
         $this->assertEquals('int', $returnType->getName());
@@ -107,13 +105,13 @@ class CommandUsageRecordRepositoryTest extends TestCase
     {
         $reflection = new \ReflectionMethod($this->repository, 'countSuccessByUserAndCommandConfig');
         $parameters = $reflection->getParameters();
-        
+
         $this->assertCount(2, $parameters);
         $this->assertEquals('userId', $parameters[0]->getName());
         $this->assertEquals('string', $parameters[0]->getType()->getName());
         $this->assertEquals('commandConfigId', $parameters[1]->getName());
         $this->assertEquals('string', $parameters[1]->getType()->getName());
-        
+
         $returnType = $reflection->getReturnType();
         $this->assertNotNull($returnType);
         $this->assertEquals('int', $returnType->getName());
@@ -123,14 +121,14 @@ class CommandUsageRecordRepositoryTest extends TestCase
     {
         // 验证 Repository 正确配置
         $reflection = new \ReflectionClass($this->repository);
-        
+
         // 检查是否继承了正确的父类
         $this->assertTrue($reflection->isSubclassOf(ServiceEntityRepository::class));
-        
+
         // 检查构造函数参数
         $constructor = $reflection->getConstructor();
         $this->assertNotNull($constructor);
-        
+
         $parameters = $constructor->getParameters();
         $this->assertCount(1, $parameters);
         $this->assertEquals('registry', $parameters[0]->getName());
@@ -140,7 +138,7 @@ class CommandUsageRecordRepositoryTest extends TestCase
     {
         $reflection = new \ReflectionClass($this->repository);
         $docComment = $reflection->getDocComment();
-        
+
         $this->assertNotFalse($docComment);
         $this->assertStringContainsString('@method', $docComment);
         $this->assertStringContainsString('CommandUsageRecord', $docComment);
@@ -176,4 +174,4 @@ class CommandUsageRecordRepositoryTest extends TestCase
         $reflection = new \ReflectionClass($this->repository);
         $this->assertTrue($reflection->isSubclassOf(ServiceEntityRepository::class));
     }
-} 
+}

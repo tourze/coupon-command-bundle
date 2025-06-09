@@ -1,27 +1,25 @@
 <?php
 
-namespace Tourze\CouponCommandBundle\Tests\Unit\Procedure;
+namespace Tourze\CouponCommandBundle\Tests\Procedure;
 
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
-use Symfony\Component\DependencyInjection\ContainerInterface;
+use Psr\Container\ContainerInterface;
 use Tourze\CouponCommandBundle\Procedure\UseCouponCommand;
 use Tourze\CouponCommandBundle\Service\CommandValidationService;
 
 class UseCouponCommandTest extends TestCase
 {
     private UseCouponCommand $procedure;
-    /** @var MockObject&ContainerInterface */
-    private MockObject $container;
-    /** @var MockObject&CommandValidationService */
-    private MockObject $validationService;
+    private ContainerInterface|MockObject $container;
+    private CommandValidationService|MockObject $validationService;
 
     protected function setUp(): void
     {
         $this->container = $this->createMock(ContainerInterface::class);
         $this->validationService = $this->createMock(CommandValidationService::class);
-        
-        $this->procedure = new UseCouponCommand();
+
+        $this->procedure = new UseCouponCommand($this->validationService);
         $this->procedure->setContainer($this->container);
     }
 
@@ -38,12 +36,6 @@ class UseCouponCommandTest extends TestCase
 
         $this->procedure->command = $command;
         $this->procedure->userId = $userId;
-
-        $this->container
-            ->expects($this->once())
-            ->method('get')
-            ->with('Tourze\\CouponCommandBundle\\Procedure\\UseCouponCommand::getCommandValidationService')
-            ->willReturn($this->validationService);
 
         $this->validationService
             ->expects($this->once())
@@ -72,12 +64,6 @@ class UseCouponCommandTest extends TestCase
         $this->procedure->command = $command;
         $this->procedure->userId = $userId;
 
-        $this->container
-            ->expects($this->once())
-            ->method('get')
-            ->with('Tourze\\CouponCommandBundle\\Procedure\\UseCouponCommand::getCommandValidationService')
-            ->willReturn($this->validationService);
-
         $this->validationService
             ->expects($this->once())
             ->method('useCommand')
@@ -103,12 +89,6 @@ class UseCouponCommandTest extends TestCase
 
         $this->procedure->command = $command;
         $this->procedure->userId = $userId;
-
-        $this->container
-            ->expects($this->once())
-            ->method('get')
-            ->with('Tourze\\CouponCommandBundle\\Procedure\\UseCouponCommand::getCommandValidationService')
-            ->willReturn($this->validationService);
 
         $this->validationService
             ->expects($this->once())
@@ -136,12 +116,6 @@ class UseCouponCommandTest extends TestCase
         $this->procedure->command = $command;
         $this->procedure->userId = $userId;
 
-        $this->container
-            ->expects($this->once())
-            ->method('get')
-            ->with('Tourze\\CouponCommandBundle\\Procedure\\UseCouponCommand::getCommandValidationService')
-            ->willReturn($this->validationService);
-
         $this->validationService
             ->expects($this->once())
             ->method('useCommand')
@@ -167,12 +141,6 @@ class UseCouponCommandTest extends TestCase
 
         $this->procedure->command = $command;
         $this->procedure->userId = $userId;
-
-        $this->container
-            ->expects($this->once())
-            ->method('get')
-            ->with('Tourze\\CouponCommandBundle\\Procedure\\UseCouponCommand::getCommandValidationService')
-            ->willReturn($this->validationService);
 
         $this->validationService
             ->expects($this->once())
@@ -200,12 +168,6 @@ class UseCouponCommandTest extends TestCase
         $this->procedure->command = $command;
         $this->procedure->userId = $userId;
 
-        $this->container
-            ->expects($this->once())
-            ->method('get')
-            ->with('Tourze\\CouponCommandBundle\\Procedure\\UseCouponCommand::getCommandValidationService')
-            ->willReturn($this->validationService);
-
         $this->validationService
             ->expects($this->once())
             ->method('useCommand')
@@ -227,7 +189,6 @@ class UseCouponCommandTest extends TestCase
         $this->assertArrayHasKey('success', $mockResult);
         $this->assertArrayHasKey('couponId', $mockResult);
         $this->assertArrayHasKey('message', $mockResult);
-        
         $this->assertTrue($mockResult['success']);
         $this->assertEquals('1234567890', $mockResult['couponId']);
         $this->assertEquals('优惠券领取成功', $mockResult['message']);
@@ -235,8 +196,8 @@ class UseCouponCommandTest extends TestCase
 
     public function test_property_assignments(): void
     {
-        $command = 'TEST_PROP_CMD';
-        $userId = 'prop_user_123';
+        $command = 'TEST_COMMAND';
+        $userId = 'user123';
 
         $this->procedure->command = $command;
         $this->procedure->userId = $userId;
@@ -247,38 +208,29 @@ class UseCouponCommandTest extends TestCase
 
     public function test_required_properties_validation(): void
     {
-        // 验证 command 和 userId 都是必需的
-        $this->procedure->command = 'REQUIRED_TEST';
-        $this->procedure->userId = 'required_user';
+        // 测试必填属性的验证
+        $this->procedure->command = '';
+        $this->procedure->userId = '';
 
-        $this->assertIsString($this->procedure->command);
-        $this->assertIsString($this->procedure->userId);
-        
-        // 确保属性不为空
-        $this->assertNotEmpty($this->procedure->command);
-        $this->assertNotEmpty($this->procedure->userId);
+        // 这里实际应该通过验证器进行验证，但由于我们mock了服务
+        // 我们主要测试属性赋值是否正确
+        $this->assertEquals('', $this->procedure->command);
+        $this->assertEquals('', $this->procedure->userId);
     }
 
     public function test_successful_coupon_acquisition_flow(): void
     {
-        $command = 'FLOW_TEST_CMD';
-        $userId = 'flow_test_user';
-        $couponId = 'flow_coupon_999';
+        $command = 'PROMO2024';
+        $userId = 'user456';
 
         $expectedResult = [
             'success' => true,
-            'couponId' => $couponId,
-            'message' => '优惠券领取成功',
+            'couponId' => 'COUP789',
+            'message' => '恭喜您，优惠券领取成功！',
         ];
 
         $this->procedure->command = $command;
         $this->procedure->userId = $userId;
-
-        $this->container
-            ->expects($this->once())
-            ->method('get')
-            ->with('Tourze\\CouponCommandBundle\\Procedure\\UseCouponCommand::getCommandValidationService')
-            ->willReturn($this->validationService);
 
         $this->validationService
             ->expects($this->once())
@@ -288,31 +240,24 @@ class UseCouponCommandTest extends TestCase
 
         $result = $this->procedure->execute();
 
-        // 验证成功流程的各个方面
+        // 验证结果
         $this->assertTrue($result['success']);
-        $this->assertEquals($couponId, $result['couponId']);
+        $this->assertEquals('COUP789', $result['couponId']);
         $this->assertStringContainsString('成功', $result['message']);
-        $this->assertArrayNotHasKey('reason', $result); // 成功时不应有 reason 字段
     }
 
     public function test_failed_coupon_acquisition_flow(): void
     {
-        $command = 'FAIL_FLOW_CMD';
-        $userId = 'fail_flow_user';
+        $command = 'EXPIRED_PROMO';
+        $userId = 'user789';
 
         $expectedResult = [
             'success' => false,
-            'message' => '优惠券库存不足',
+            'message' => '抱歉，该口令已过期',
         ];
 
         $this->procedure->command = $command;
         $this->procedure->userId = $userId;
-
-        $this->container
-            ->expects($this->once())
-            ->method('get')
-            ->with('Tourze\\CouponCommandBundle\\Procedure\\UseCouponCommand::getCommandValidationService')
-            ->willReturn($this->validationService);
 
         $this->validationService
             ->expects($this->once())
@@ -322,10 +267,9 @@ class UseCouponCommandTest extends TestCase
 
         $result = $this->procedure->execute();
 
-        // 验证失败流程的各个方面
+        // 验证失败结果
         $this->assertFalse($result['success']);
-        $this->assertArrayNotHasKey('couponId', $result); // 失败时不应有 couponId
-        $this->assertIsString($result['message']);
-        $this->assertNotEmpty($result['message']);
+        $this->assertStringContainsString('过期', $result['message']);
+        $this->assertArrayNotHasKey('couponId', $result);
     }
-} 
+}

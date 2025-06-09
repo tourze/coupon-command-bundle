@@ -1,6 +1,6 @@
 <?php
 
-namespace Tourze\CouponCommandBundle\Tests\Unit\Repository;
+namespace Tourze\CouponCommandBundle\Tests\Repository;
 
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\ORM\EntityManagerInterface;
@@ -13,16 +13,14 @@ use Tourze\CouponCommandBundle\Repository\CommandLimitRepository;
 class CommandLimitRepositoryTest extends TestCase
 {
     private CommandLimitRepository $repository;
-    /** @var MockObject&ManagerRegistry */
-    private MockObject $managerRegistry;
-    /** @var MockObject&EntityManagerInterface */
-    private MockObject $entityManager;
+    private ManagerRegistry|MockObject $managerRegistry;
+    private EntityManagerInterface|MockObject $entityManager;
 
     protected function setUp(): void
     {
         $this->managerRegistry = $this->createMock(ManagerRegistry::class);
         $this->entityManager = $this->createMock(EntityManagerInterface::class);
-        
+
         $this->managerRegistry
             ->method('getManagerForClass')
             ->with(CommandLimit::class)
@@ -46,7 +44,7 @@ class CommandLimitRepositoryTest extends TestCase
         // 通过反射检查 Repository 是否正确配置了实体类
         $reflection = new \ReflectionClass($this->repository);
         $parentReflection = $reflection->getParentClass();
-        
+
         $this->assertTrue($parentReflection->getName() === ServiceEntityRepository::class);
     }
 
@@ -61,11 +59,11 @@ class CommandLimitRepositoryTest extends TestCase
     {
         $reflection = new \ReflectionMethod($this->repository, 'findByCommandConfigId');
         $parameters = $reflection->getParameters();
-        
+
         $this->assertCount(1, $parameters);
         $this->assertEquals('commandConfigId', $parameters[0]->getName());
         $this->assertEquals('string', $parameters[0]->getType()->getName());
-        
+
         $returnType = $reflection->getReturnType();
         $this->assertNotNull($returnType);
         $this->assertTrue($returnType->allowsNull());
@@ -75,9 +73,9 @@ class CommandLimitRepositoryTest extends TestCase
     {
         $reflection = new \ReflectionMethod($this->repository, 'findAllEnabled');
         $parameters = $reflection->getParameters();
-        
+
         $this->assertCount(0, $parameters);
-        
+
         $returnType = $reflection->getReturnType();
         $this->assertNotNull($returnType);
         $this->assertEquals('array', $returnType->getName());
@@ -87,14 +85,14 @@ class CommandLimitRepositoryTest extends TestCase
     {
         // 验证 Repository 正确配置
         $reflection = new \ReflectionClass($this->repository);
-        
+
         // 检查是否继承了正确的父类
         $this->assertTrue($reflection->isSubclassOf(ServiceEntityRepository::class));
-        
+
         // 检查构造函数参数
         $constructor = $reflection->getConstructor();
         $this->assertNotNull($constructor);
-        
+
         $parameters = $constructor->getParameters();
         $this->assertCount(1, $parameters);
         $this->assertEquals('registry', $parameters[0]->getName());
@@ -104,7 +102,7 @@ class CommandLimitRepositoryTest extends TestCase
     {
         $reflection = new \ReflectionClass($this->repository);
         $docComment = $reflection->getDocComment();
-        
+
         $this->assertNotFalse($docComment);
         $this->assertStringContainsString('@method', $docComment);
         $this->assertStringContainsString('CommandLimit', $docComment);
@@ -127,4 +125,4 @@ class CommandLimitRepositoryTest extends TestCase
         $this->assertInstanceOf(ManagerRegistry::class, $this->managerRegistry);
         $this->assertInstanceOf(EntityManagerInterface::class, $this->entityManager);
     }
-} 
+}

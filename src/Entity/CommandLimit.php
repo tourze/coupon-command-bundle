@@ -328,4 +328,4 @@ class CommandLimit implements ApiArrayInterface
             'updateTime' => $this->getUpdateTime()?->format('Y-m-d H:i:s'),
         ];
     }
-} 
+}

@@ -15,8 +15,7 @@ class CommandManagementService
         private readonly EntityManagerInterface $entityManager,
         private readonly CommandConfigRepository $commandConfigRepository,
         private readonly CommandLimitRepository $commandLimitRepository,
-    ) {
-    }
+    ) {}
 
     /**
      * 创建口令配置
@@ -230,4 +229,4 @@ class CommandManagementService
 
         return $commandLimit;
     }
-} 
+}

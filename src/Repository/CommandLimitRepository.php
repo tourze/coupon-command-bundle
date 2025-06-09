@@ -42,4 +42,4 @@ class CommandLimitRepository extends ServiceEntityRepository
             ->getQuery()
             ->getResult();
     }
-} 
+}

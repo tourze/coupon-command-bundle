@@ -76,4 +76,4 @@ class CommandUsageRecordRepository extends ServiceEntityRepository
             ->getQuery()
             ->getSingleScalarResult();
     }
-} 
+}

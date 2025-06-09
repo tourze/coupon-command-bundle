@@ -15,8 +15,7 @@ class CommandValidationService
         private readonly EntityManagerInterface $entityManager,
         private readonly CommandConfigRepository $commandConfigRepository,
         private readonly CommandUsageRecordRepository $usageRecordRepository,
-    ) {
-    }
+    ) {}
 
     /**
      * 验证口令有效性
@@ -73,7 +72,7 @@ class CommandValidationService
         }
 
         $commandConfig = $this->commandConfigRepository->findOneBy(['command' => $command]);
-        
+
         try {
             $this->entityManager->beginTransaction();
 
@@ -96,10 +95,10 @@ class CommandValidationService
             ];
         } catch (\Exception $e) {
             $this->entityManager->rollback();
-            
+
             // 记录失败的使用记录
             $this->recordUsage($command, $userId, false, '系统错误: ' . $e->getMessage());
-            
+
             return [
                 'success' => false,
                 'message' => '系统错误，请稍后重试',
@@ -144,7 +143,7 @@ class CommandValidationService
                     $userId,
                     $commandConfig->getId()
                 );
-                
+
                 if ($userUsageCount >= $limit->getMaxUsagePerUser()) {
                     return [
                         'valid' => false,
@@ -168,7 +167,7 @@ class CommandValidationService
         ?string $couponId = null
     ): void {
         $commandConfig = $this->commandConfigRepository->findOneBy(['command' => $command]);
-        
+
         $usageRecord = new CommandUsageRecord();
         $usageRecord->setCommandConfig($commandConfig);
         $usageRecord->setUserId($userId);
@@ -196,4 +195,4 @@ class CommandValidationService
     {
         return $this->usageRecordRepository->findByCommandConfigId($commandConfigId);
     }
-} 
+}

@@ -195,4 +195,4 @@ class CommandUsageRecord implements ApiArrayInterface
             'extraData' => $this->getExtraData(),
         ];
     }
-} 
+}

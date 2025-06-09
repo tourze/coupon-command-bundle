@@ -1,6 +1,6 @@
 <?php
 
-namespace Tourze\CouponCommandBundle\Tests\Unit\Repository;
+namespace Tourze\CouponCommandBundle\Tests\Repository;
 
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\ORM\EntityManagerInterface;
@@ -13,16 +13,14 @@ use Tourze\CouponCommandBundle\Repository\CommandConfigRepository;
 class CommandConfigRepositoryTest extends TestCase
 {
     private CommandConfigRepository $repository;
-    /** @var MockObject&ManagerRegistry */
-    private MockObject $managerRegistry;
-    /** @var MockObject&EntityManagerInterface */
-    private MockObject $entityManager;
+    private ManagerRegistry|MockObject $managerRegistry;
+    private EntityManagerInterface|MockObject $entityManager;
 
     protected function setUp(): void
     {
         $this->managerRegistry = $this->createMock(ManagerRegistry::class);
         $this->entityManager = $this->createMock(EntityManagerInterface::class);
-        
+
         $this->managerRegistry
             ->method('getManagerForClass')
             ->with(CommandConfig::class)
@@ -46,7 +44,7 @@ class CommandConfigRepositoryTest extends TestCase
         // 通过反射检查 Repository 是否正确配置了实体类
         $reflection = new \ReflectionClass($this->repository);
         $parentReflection = $reflection->getParentClass();
-        
+
         $this->assertTrue($parentReflection->getName() === ServiceEntityRepository::class);
     }
 
@@ -65,11 +63,11 @@ class CommandConfigRepositoryTest extends TestCase
     {
         $reflection = new \ReflectionMethod($this->repository, 'findByCommand');
         $parameters = $reflection->getParameters();
-        
+
         $this->assertCount(1, $parameters);
         $this->assertEquals('command', $parameters[0]->getName());
         $this->assertEquals('string', $parameters[0]->getType()->getName());
-        
+
         $returnType = $reflection->getReturnType();
         $this->assertNotNull($returnType);
         $this->assertTrue($returnType->allowsNull());
@@ -79,11 +77,11 @@ class CommandConfigRepositoryTest extends TestCase
     {
         $reflection = new \ReflectionMethod($this->repository, 'findByCouponId');
         $parameters = $reflection->getParameters();
-        
+
         $this->assertCount(1, $parameters);
         $this->assertEquals('couponId', $parameters[0]->getName());
         $this->assertEquals('string', $parameters[0]->getType()->getName());
-        
+
         $returnType = $reflection->getReturnType();
         $this->assertNotNull($returnType);
         $this->assertTrue($returnType->allowsNull());
@@ -93,9 +91,9 @@ class CommandConfigRepositoryTest extends TestCase
     {
         $reflection = new \ReflectionMethod($this->repository, 'findAllWithLimits');
         $parameters = $reflection->getParameters();
-        
+
         $this->assertCount(0, $parameters);
-        
+
         $returnType = $reflection->getReturnType();
         $this->assertNotNull($returnType);
         $this->assertEquals('array', $returnType->getName());
@@ -105,9 +103,9 @@ class CommandConfigRepositoryTest extends TestCase
     {
         $reflection = new \ReflectionMethod($this->repository, 'findAllWithEnabledLimits');
         $parameters = $reflection->getParameters();
-        
+
         $this->assertCount(0, $parameters);
-        
+
         $returnType = $reflection->getReturnType();
         $this->assertNotNull($returnType);
         $this->assertEquals('array', $returnType->getName());
@@ -117,13 +115,13 @@ class CommandConfigRepositoryTest extends TestCase
     {
         $reflection = new \ReflectionMethod($this->repository, 'isCommandExists');
         $parameters = $reflection->getParameters();
-        
+
         $this->assertCount(2, $parameters);
         $this->assertEquals('command', $parameters[0]->getName());
         $this->assertEquals('string', $parameters[0]->getType()->getName());
         $this->assertEquals('excludeId', $parameters[1]->getName());
         $this->assertTrue($parameters[1]->allowsNull());
-        
+
         $returnType = $reflection->getReturnType();
         $this->assertNotNull($returnType);
         $this->assertEquals('bool', $returnType->getName());
@@ -133,11 +131,11 @@ class CommandConfigRepositoryTest extends TestCase
     {
         $reflection = new \ReflectionMethod($this->repository, 'getUsageStats');
         $parameters = $reflection->getParameters();
-        
+
         $this->assertCount(1, $parameters);
         $this->assertEquals('commandConfigId', $parameters[0]->getName());
         $this->assertEquals('string', $parameters[0]->getType()->getName());
-        
+
         $returnType = $reflection->getReturnType();
         $this->assertNotNull($returnType);
         $this->assertEquals('array', $returnType->getName());
@@ -147,14 +145,14 @@ class CommandConfigRepositoryTest extends TestCase
     {
         // 验证 Repository 正确配置
         $reflection = new \ReflectionClass($this->repository);
-        
+
         // 检查是否继承了正确的父类
         $this->assertTrue($reflection->isSubclassOf(ServiceEntityRepository::class));
-        
+
         // 检查构造函数参数
         $constructor = $reflection->getConstructor();
         $this->assertNotNull($constructor);
-        
+
         $parameters = $constructor->getParameters();
         $this->assertCount(1, $parameters);
         $this->assertEquals('registry', $parameters[0]->getName());
@@ -164,9 +162,9 @@ class CommandConfigRepositoryTest extends TestCase
     {
         $reflection = new \ReflectionClass($this->repository);
         $docComment = $reflection->getDocComment();
-        
+
         $this->assertNotFalse($docComment);
         $this->assertStringContainsString('@method', $docComment);
         $this->assertStringContainsString('CommandConfig', $docComment);
     }
-} 
+}

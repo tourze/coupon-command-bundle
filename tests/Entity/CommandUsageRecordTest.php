@@ -1,6 +1,6 @@
 <?php
 
-namespace Tourze\CouponCommandBundle\Tests\Unit\Entity;
+namespace Tourze\CouponCommandBundle\Tests\Entity;
 
 use PHPUnit\Framework\TestCase;
 use Tourze\CouponCommandBundle\Entity\CommandConfig;
@@ -187,4 +187,4 @@ class CommandUsageRecordTest extends TestCase
         $this->assertEquals('口令使用次数已达上限', $this->usageRecord->getFailureReason());
         $this->assertNull($this->usageRecord->getCouponId());
     }
-} 
+}

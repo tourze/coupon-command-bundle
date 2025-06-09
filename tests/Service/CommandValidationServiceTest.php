@@ -1,6 +1,6 @@
 <?php
 
-namespace Tourze\CouponCommandBundle\Tests\Unit\Service;
+namespace Tourze\CouponCommandBundle\Tests\Service;
 
 use Doctrine\ORM\EntityManagerInterface;
 use PHPUnit\Framework\MockObject\MockObject;
@@ -218,7 +218,7 @@ class CommandValidationServiceTest extends TestCase
     {
         // 简化测试：验证方法可以调用，不深入测试复杂逻辑
         $this->assertTrue(method_exists($this->service, 'useCommand'));
-        
+
         // 验证服务初始化正确
         $this->assertInstanceOf(CommandValidationService::class, $this->service);
     }
@@ -252,4 +252,4 @@ class CommandValidationServiceTest extends TestCase
 
         $this->assertSame($expectedRecords, $result);
     }
-} 
+}

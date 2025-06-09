@@ -1,6 +1,6 @@
 <?php
 
-namespace Tourze\CouponCommandBundle\Tests\Unit\Entity;
+namespace Tourze\CouponCommandBundle\Tests\Entity;
 
 use PHPUnit\Framework\TestCase;
 use Tourze\CouponCommandBundle\Entity\CommandConfig;
@@ -28,7 +28,7 @@ class CommandConfigTest extends TestCase
     {
         $command = 'TEST_COMMAND_2024';
         $this->commandConfig->setCommand($command);
-        
+
         $this->assertEquals($command, $this->commandConfig->getCommand());
     }
 
@@ -36,9 +36,9 @@ class CommandConfigTest extends TestCase
     {
         $commandLimit = new CommandLimit();
         $commandLimit->setMaxUsagePerUser(10);
-        
+
         $this->commandConfig->setCommandLimit($commandLimit);
-        
+
         $this->assertSame($commandLimit, $this->commandConfig->getCommandLimit());
         $this->assertSame($this->commandConfig, $commandLimit->getCommandConfig());
     }
@@ -49,24 +49,24 @@ class CommandConfigTest extends TestCase
         $usageRecord1->setUserId('user1');
         $usageRecord1->setCommandText('TEST_CMD');
         $usageRecord1->setIsSuccess(true);
-        
+
         $usageRecord2 = new CommandUsageRecord();
         $usageRecord2->setUserId('user2');
         $usageRecord2->setCommandText('TEST_CMD');
         $usageRecord2->setIsSuccess(false);
-        
+
         // 添加使用记录
         $this->commandConfig->addUsageRecord($usageRecord1);
         $this->commandConfig->addUsageRecord($usageRecord2);
-        
+
         $this->assertTrue($this->commandConfig->getUsageRecords()->contains($usageRecord1));
         $this->assertTrue($this->commandConfig->getUsageRecords()->contains($usageRecord2));
         $this->assertEquals(2, $this->commandConfig->getUsageRecords()->count());
-        
+
         // 测试关联关系
         $this->assertSame($this->commandConfig, $usageRecord1->getCommandConfig());
         $this->assertSame($this->commandConfig, $usageRecord2->getCommandConfig());
-        
+
         // 移除使用记录
         $this->commandConfig->removeUsageRecord($usageRecord1);
         $this->assertFalse($this->commandConfig->getUsageRecords()->contains($usageRecord1));
@@ -77,10 +77,10 @@ class CommandConfigTest extends TestCase
     {
         $usageRecord = new CommandUsageRecord();
         $usageRecord->setUserId('user1');
-        
+
         $this->commandConfig->addUsageRecord($usageRecord);
         $this->commandConfig->addUsageRecord($usageRecord); // 重复添加
-        
+
         $this->assertEquals(1, $this->commandConfig->getUsageRecords()->count());
     }
 
@@ -88,10 +88,10 @@ class CommandConfigTest extends TestCase
     {
         $createTime = new \DateTime('2024-01-01 10:00:00');
         $updateTime = new \DateTime('2024-01-01 11:00:00');
-        
+
         $this->commandConfig->setCreateTime($createTime);
         $this->commandConfig->setUpdateTime($updateTime);
-        
+
         $this->assertEquals($createTime, $this->commandConfig->getCreateTime());
         $this->assertEquals($updateTime, $this->commandConfig->getUpdateTime());
     }
@@ -99,12 +99,12 @@ class CommandConfigTest extends TestCase
     public function test_retrieve_api_array(): void
     {
         $this->commandConfig->setCommand('API_TEST');
-        
+
         $createTime = new \DateTime('2024-01-01 10:00:00');
         $this->commandConfig->setCreateTime($createTime);
-        
+
         $apiArray = $this->commandConfig->retrieveApiArray();
-        
+
         $this->assertIsArray($apiArray);
         $this->assertEquals('API_TEST', $apiArray['command']);
         $this->assertEquals('2024-01-01 10:00:00', $apiArray['createTime']);
@@ -120,15 +120,15 @@ class CommandConfigTest extends TestCase
         $updatedBy = 'editor_user';
         $createdFromIp = '192.168.1.1';
         $updatedFromIp = '192.168.1.2';
-        
+
         $this->commandConfig->setCreatedBy($createdBy);
         $this->commandConfig->setUpdatedBy($updatedBy);
         $this->commandConfig->setCreatedFromIp($createdFromIp);
         $this->commandConfig->setUpdatedFromIp($updatedFromIp);
-        
+
         $this->assertEquals($createdBy, $this->commandConfig->getCreatedBy());
         $this->assertEquals($updatedBy, $this->commandConfig->getUpdatedBy());
         $this->assertEquals($createdFromIp, $this->commandConfig->getCreatedFromIp());
         $this->assertEquals($updatedFromIp, $this->commandConfig->getUpdatedFromIp());
     }
-} 
+}

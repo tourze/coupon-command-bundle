@@ -1,6 +1,6 @@
 <?php
 
-namespace Tourze\CouponCommandBundle\Tests\Unit\Entity;
+namespace Tourze\CouponCommandBundle\Tests\Entity;
 
 use PHPUnit\Framework\TestCase;
 use Tourze\CouponCommandBundle\Entity\CommandConfig;
@@ -211,4 +211,4 @@ class CommandLimitTest extends TestCase
         $this->assertEquals('2024-01-01 09:00:00', $apiArray['createTime']);
         $this->assertTrue($apiArray['isEnabled']);
     }
-} 
+}

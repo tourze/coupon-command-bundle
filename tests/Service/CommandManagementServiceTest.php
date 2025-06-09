@@ -1,6 +1,6 @@
 <?php
 
-namespace Tourze\CouponCommandBundle\Tests\Unit\Service;
+namespace Tourze\CouponCommandBundle\Tests\Service;
 
 use Doctrine\ORM\EntityManagerInterface;
 use PHPUnit\Framework\MockObject\MockObject;
@@ -15,12 +15,9 @@ use Tourze\CouponCoreBundle\Entity\Coupon;
 class CommandManagementServiceTest extends TestCase
 {
     private CommandManagementService $service;
-    /** @var MockObject&EntityManagerInterface */
-    private MockObject $entityManager;
-    /** @var MockObject&CommandConfigRepository */
-    private MockObject $commandConfigRepository;
-    /** @var MockObject&CommandLimitRepository */
-    private MockObject $commandLimitRepository;
+    private EntityManagerInterface|MockObject $entityManager;
+    private CommandConfigRepository|MockObject $commandConfigRepository;
+    private CommandLimitRepository|MockObject $commandLimitRepository;
 
     protected function setUp(): void
     {
@@ -38,7 +35,6 @@ class CommandManagementServiceTest extends TestCase
     public function test_create_command_config_success(): void
     {
         $command = 'NEW_TEST_CMD';
-        /** @var MockObject&Coupon $coupon */
         $coupon = $this->createMock(Coupon::class);
 
         $this->commandConfigRepository
@@ -66,7 +62,6 @@ class CommandManagementServiceTest extends TestCase
     public function test_create_command_config_with_duplicate_command(): void
     {
         $command = 'DUPLICATE_CMD';
-        /** @var MockObject&Coupon $coupon */
         $coupon = $this->createMock(Coupon::class);
 
         $this->commandConfigRepository
@@ -448,7 +443,7 @@ class CommandManagementServiceTest extends TestCase
         $config1 = $this->createMock(CommandConfig::class);
         $config1->method('getId')->willReturn('config_1');
         $config1->method('retrieveApiArray')->willReturn(['id' => 'config_1', 'command' => 'CMD1']);
-        
+
         $config2 = $this->createMock(CommandConfig::class);
         $config2->method('getId')->willReturn('config_2');
         $config2->method('retrieveApiArray')->willReturn(['id' => 'config_2', 'command' => 'CMD2']);
@@ -475,10 +470,10 @@ class CommandManagementServiceTest extends TestCase
 
         $this->assertIsArray($result);
         $this->assertCount(2, $result);
-        
+
         $this->assertEquals(['id' => 'config_1', 'command' => 'CMD1'], $result[0]['config']);
         $this->assertEquals($stats1, $result[0]['stats']);
-        
+
         $this->assertEquals(['id' => 'config_2', 'command' => 'CMD2'], $result[1]['config']);
         $this->assertEquals($stats2, $result[1]['stats']);
     }
@@ -526,4 +521,4 @@ class CommandManagementServiceTest extends TestCase
 
         $this->service->toggleCommandLimitStatus($commandLimitId);
     }
-} 
+}

@@ -14,13 +14,6 @@ use Tourze\JsonRPC\Core\Procedure\BaseProcedure;
 #[MethodDoc(summary: '验证优惠券口令', description: '验证指定口令的有效性，不实际使用口令')]
 class ValidateCouponCommand extends BaseProcedure
 {
-    public static function getSubscribedServices(): array
-    {
-        return array_merge(parent::getSubscribedServices(), [
-            'getCommandValidationService' => CommandValidationService::class,
-        ]);
-    }
-
     #[MethodParam(description: '口令内容')]
     #[NotBlank(message: '口令不能为空')]
     #[Type(type: 'string', message: '口令必须是字符串')]
@@ -30,14 +23,13 @@ class ValidateCouponCommand extends BaseProcedure
     #[Type(type: 'string', message: '用户ID必须是字符串')]
     public ?string $userId = null;
 
-    protected function getCommandValidationService(): CommandValidationService
+    public function __construct(private readonly CommandValidationService $commandValidationService)
     {
-        return $this->container->get(__METHOD__);
     }
 
     public function execute(): array
     {
-        return $this->getCommandValidationService()->validateCommand(
+        return $this->commandValidationService->validateCommand(
             $this->command,
             $this->userId
         );
@@ -67,4 +59,4 @@ class ValidateCouponCommand extends BaseProcedure
             ],
         ];
     }
-} 
+}

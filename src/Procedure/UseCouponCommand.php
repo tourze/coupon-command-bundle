@@ -4,7 +4,6 @@ namespace Tourze\CouponCommandBundle\Procedure;
 
 use Symfony\Component\Validator\Constraints\NotBlank;
 use Symfony\Component\Validator\Constraints\Type;
-use Symfony\Contracts\Service\Attribute\SubscribedService;
 use Tourze\CouponCommandBundle\Service\CommandValidationService;
 use Tourze\JsonRPC\Core\Attribute\MethodDoc;
 use Tourze\JsonRPC\Core\Attribute\MethodExpose;
@@ -25,15 +24,13 @@ class UseCouponCommand extends BaseProcedure
     #[Type(type: 'string', message: '用户ID必须是字符串')]
     public string $userId;
 
-    #[SubscribedService]
-    protected function getCommandValidationService(): CommandValidationService
+    public function __construct(private readonly CommandValidationService $commandValidationService)
     {
-        return $this->container->get(__METHOD__);
     }
 
     public function execute(): array
     {
-        return $this->getCommandValidationService()->useCommand(
+        return $this->commandValidationService->useCommand(
             $this->command,
             $this->userId
         );
@@ -47,4 +44,4 @@ class UseCouponCommand extends BaseProcedure
             'message' => '优惠券领取成功',
         ];
     }
-} 
+}
