@@ -93,7 +93,7 @@ class CommandValidationService
                 'couponId' => $couponId,
                 'message' => '优惠券领取成功',
             ];
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
             $this->entityManager->rollback();
 
             // 记录失败的使用记录
