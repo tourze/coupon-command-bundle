@@ -12,6 +12,7 @@ use Tourze\DoctrineIpBundle\Attribute\UpdateIpColumn;
 use Tourze\DoctrineSnowflakeBundle\Service\SnowflakeIdGenerator;
 use Tourze\DoctrineTimestampBundle\Attribute\CreateTimeColumn;
 use Tourze\DoctrineTimestampBundle\Attribute\UpdateTimeColumn;
+use Tourze\DoctrineTimestampBundle\Traits\TimestampableAware;
 use Tourze\DoctrineUserBundle\Attribute\CreatedByColumn;
 use Tourze\DoctrineUserBundle\Attribute\UpdatedByColumn;
 
@@ -19,6 +20,7 @@ use Tourze\DoctrineUserBundle\Attribute\UpdatedByColumn;
 #[ORM\Table(name: 'coupon_command_limit', options: ['comment' => '优惠券口令限制配置'])]
 class CommandLimit implements ApiArrayInterface
 {
+    use TimestampableAware;
     #[ORM\Id]
     #[ORM\GeneratedValue(strategy: 'CUSTOM')]
     #[ORM\CustomIdGenerator(SnowflakeIdGenerator::class)]
@@ -71,14 +73,8 @@ class CommandLimit implements ApiArrayInterface
 
     #[IndexColumn]
     #[CreateTimeColumn]
-    #[ORM\Column(type: Types::DATETIME_MUTABLE, nullable: true, options: ['comment' => '创建时间'])]
-    private ?\DateTimeInterface $createTime = null;
-
-    #[UpdateTimeColumn]
-    #[ORM\Column(type: Types::DATETIME_MUTABLE, nullable: true, options: ['comment' => '更新时间'])]
-    private ?\DateTimeInterface $updateTime = null;
-
-    public function getId(): ?string
+    #[ORM\Column(type: Types::DATETIME_MUTABLE, nullable: true, options: ['comment' => '创建时间'])]#[UpdateTimeColumn]
+    #[ORM\Column(type: Types::DATETIME_MUTABLE, nullable: true, options: ['comment' => '更新时间'])]public function getId(): ?string
     {
         return $this->id;
     }
@@ -244,33 +240,7 @@ class CommandLimit implements ApiArrayInterface
         $this->updatedFromIp = $updatedFromIp;
 
         return $this;
-    }
-
-    public function getCreateTime(): ?\DateTimeInterface
-    {
-        return $this->createTime;
-    }
-
-    public function setCreateTime(?\DateTimeInterface $createTime): self
-    {
-        $this->createTime = $createTime;
-
-        return $this;
-    }
-
-    public function getUpdateTime(): ?\DateTimeInterface
-    {
-        return $this->updateTime;
-    }
-
-    public function setUpdateTime(?\DateTimeInterface $updateTime): self
-    {
-        $this->updateTime = $updateTime;
-
-        return $this;
-    }
-
-    /**
+    }/**
      * 检查时间限制是否有效
      */
     public function isTimeValid(): bool
