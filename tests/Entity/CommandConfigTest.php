@@ -104,8 +104,6 @@ class CommandConfigTest extends TestCase
         $this->commandConfig->setCreateTime($createTime);
 
         $apiArray = $this->commandConfig->retrieveApiArray();
-
-        $this->assertIsArray($apiArray);
         $this->assertEquals('API_TEST', $apiArray['command']);
         $this->assertEquals('2024-01-01 10:00:00', $apiArray['createTime']);
         $this->assertEquals(0, $apiArray['usageCount']);

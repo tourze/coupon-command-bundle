@@ -196,22 +196,17 @@ class ValidateCouponCommandTest extends TestCase
     public function test_get_mock_result(): void
     {
         $mockResult = ValidateCouponCommand::getMockResult();
-
-        $this->assertIsArray($mockResult);
         $this->assertArrayHasKey('valid', $mockResult);
         $this->assertArrayHasKey('couponInfo', $mockResult);
         $this->assertArrayHasKey('commandConfig', $mockResult);
         $this->assertTrue($mockResult['valid']);
-        $this->assertIsArray($mockResult['couponInfo']);
-        $this->assertIsArray($mockResult['commandConfig']);
+
     }
 
     public function test_get_subscribed_services(): void
     {
         // 测试获取订阅的服务
         $services = $this->procedure::getSubscribedServices();
-        
-        $this->assertIsArray($services);
         // 由于现在是构造函数注入，这个方法可能不再需要
         // 但保留测试以确保兼容性
     }

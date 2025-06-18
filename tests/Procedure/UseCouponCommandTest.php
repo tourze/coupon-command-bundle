@@ -184,8 +184,6 @@ class UseCouponCommandTest extends TestCase
     public function test_get_mock_result(): void
     {
         $mockResult = UseCouponCommand::getMockResult();
-
-        $this->assertIsArray($mockResult);
         $this->assertArrayHasKey('success', $mockResult);
         $this->assertArrayHasKey('couponId', $mockResult);
         $this->assertArrayHasKey('message', $mockResult);

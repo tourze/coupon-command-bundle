@@ -415,8 +415,6 @@ class CommandManagementServiceTest extends TestCase
             ->willReturn($usageStats);
 
         $result = $this->service->getCommandConfigDetail($id);
-
-        $this->assertIsArray($result);
         $this->assertArrayHasKey('config', $result);
         $this->assertArrayHasKey('stats', $result);
         $this->assertEquals($usageStats, $result['stats']);
@@ -467,8 +465,6 @@ class CommandManagementServiceTest extends TestCase
             ]);
 
         $result = $this->service->getCommandConfigList();
-
-        $this->assertIsArray($result);
         $this->assertCount(2, $result);
 
         $this->assertEquals(['id' => 'config_1', 'command' => 'CMD1'], $result[0]['config']);
