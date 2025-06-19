@@ -6,16 +6,17 @@ use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 use Tourze\Arrayable\ApiArrayInterface;
 use Tourze\CouponCommandBundle\Repository\CommandUsageRecordRepository;
-use Tourze\DoctrineIndexedBundle\Attribute\IndexColumn;
 use Tourze\DoctrineIpBundle\Attribute\CreateIpColumn;
 use Tourze\DoctrineSnowflakeBundle\Service\SnowflakeIdGenerator;
-use Tourze\DoctrineTimestampBundle\Attribute\CreateTimeColumn;
+use Tourze\DoctrineTimestampBundle\Traits\CreateTimeAware;
 use Tourze\DoctrineUserBundle\Attribute\CreatedByColumn;
 
 #[ORM\Entity(repositoryClass: CommandUsageRecordRepository::class)]
 #[ORM\Table(name: 'coupon_command_usage_record', options: ['comment' => '优惠券口令使用记录'])]
 class CommandUsageRecord implements ApiArrayInterface
 {
+    use CreateTimeAware;
+
     #[ORM\Id]
     #[ORM\GeneratedValue(strategy: 'CUSTOM')]
     #[ORM\CustomIdGenerator(SnowflakeIdGenerator::class)]
@@ -51,11 +52,6 @@ class CommandUsageRecord implements ApiArrayInterface
     #[CreateIpColumn]
     #[ORM\Column(length: 128, nullable: true, options: ['comment' => '创建时IP'])]
     private ?string $createdFromIp = null;
-
-    #[IndexColumn]
-    #[CreateTimeColumn]
-    #[ORM\Column(type: Types::DATETIME_MUTABLE, nullable: true, options: ['comment' => '使用时间'])]
-    private ?\DateTimeInterface $createTime = null;
 
     public function getId(): ?string
     {
@@ -166,18 +162,6 @@ class CommandUsageRecord implements ApiArrayInterface
     public function setCreatedFromIp(?string $createdFromIp): self
     {
         $this->createdFromIp = $createdFromIp;
-
-        return $this;
-    }
-
-    public function getCreateTime(): ?\DateTimeInterface
-    {
-        return $this->createTime;
-    }
-
-    public function setCreateTime(?\DateTimeInterface $createTime): self
-    {
-        $this->createTime = $createTime;
 
         return $this;
     }
