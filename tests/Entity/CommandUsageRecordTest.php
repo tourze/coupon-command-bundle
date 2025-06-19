@@ -116,7 +116,7 @@ class CommandUsageRecordTest extends TestCase
 
     public function test_create_time_handling(): void
     {
-        $createTime = new \DateTime('2024-01-15 14:30:00');
+        $createTime = new \DateTimeImmutable('2024-01-15 14:30:00');
 
         $this->usageRecord->setCreateTime($createTime);
         $this->assertEquals($createTime, $this->usageRecord->getCreateTime());
@@ -133,7 +133,7 @@ class CommandUsageRecordTest extends TestCase
         $couponId = 'api_coupon_123';
         $failureReason = 'API测试失败';
         $extraData = ['test' => 'data'];
-        $createTime = new \DateTime('2024-01-15 15:45:00');
+        $createTime = new \DateTimeImmutable('2024-01-15 15:45:00');
 
         $this->usageRecord->setUserId($userId);
         $this->usageRecord->setCommandText($commandText);

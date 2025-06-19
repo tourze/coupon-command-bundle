@@ -86,8 +86,8 @@ class CommandConfigTest extends TestCase
 
     public function test_timestamp_methods(): void
     {
-        $createTime = new \DateTime('2024-01-01 10:00:00');
-        $updateTime = new \DateTime('2024-01-01 11:00:00');
+        $createTime = new \DateTimeImmutable('2024-01-01 10:00:00');
+        $updateTime = new \DateTimeImmutable('2024-01-01 11:00:00');
         
         $this->commandConfig->setCreateTime($createTime);
         $this->commandConfig->setUpdateTime($updateTime);
@@ -100,7 +100,7 @@ class CommandConfigTest extends TestCase
     {
         $this->commandConfig->setCommand('API_TEST');
         
-        $createTime = new \DateTime('2024-01-01 10:00:00');
+        $createTime = new \DateTimeImmutable('2024-01-01 10:00:00');
         $this->commandConfig->setCreateTime($createTime);
         
         $apiArray = $this->commandConfig->retrieveApiArray();

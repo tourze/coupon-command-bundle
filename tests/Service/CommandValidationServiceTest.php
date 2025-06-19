@@ -117,7 +117,7 @@ class CommandValidationServiceTest extends TestCase
 
         $commandLimit = new CommandLimit();
         $commandLimit->setIsEnabled(true);
-        $commandLimit->setEndTime(new \DateTime('-1 hour')); // 已过期
+        $commandLimit->setEndTime(new \DateTimeImmutable('-1 hour')); // 已过期
 
         $commandConfig = new CommandConfig();
         $commandConfig->setCommand('EXPIRED_CMD');

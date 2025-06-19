@@ -10,14 +10,14 @@ use Tourze\DoctrineIpBundle\Attribute\CreateIpColumn;
 use Tourze\DoctrineIpBundle\Attribute\UpdateIpColumn;
 use Tourze\DoctrineSnowflakeBundle\Service\SnowflakeIdGenerator;
 use Tourze\DoctrineTimestampBundle\Traits\TimestampableAware;
-use Tourze\DoctrineUserBundle\Attribute\CreatedByColumn;
-use Tourze\DoctrineUserBundle\Attribute\UpdatedByColumn;
+use Tourze\DoctrineUserBundle\Traits\BlameableAware;
 
 #[ORM\Entity(repositoryClass: CommandLimitRepository::class)]
 #[ORM\Table(name: 'coupon_command_limit', options: ['comment' => '优惠券口令限制配置'])]
-class CommandLimit implements ApiArrayInterface
+class CommandLimit implements ApiArrayInterface, \Stringable
 {
     use TimestampableAware;
+    use BlameableAware;
     #[ORM\Id]
     #[ORM\GeneratedValue(strategy: 'CUSTOM')]
     #[ORM\CustomIdGenerator(SnowflakeIdGenerator::class)]
@@ -37,11 +37,11 @@ class CommandLimit implements ApiArrayInterface
     #[ORM\Column(type: Types::INTEGER, nullable: false, options: ['comment' => '当前已使用次数', 'default' => 0])]
     private int $currentUsage = 0;
 
-    #[ORM\Column(type: Types::DATETIME_MUTABLE, nullable: true, options: ['comment' => '开始有效时间'])]
-    private ?\DateTimeInterface $startTime = null;
+    #[ORM\Column(type: Types::DATETIME_IMMUTABLE, nullable: true, options: ['comment' => '开始有效时间'])]
+    private ?\DateTimeImmutable $startTime = null;
 
-    #[ORM\Column(type: Types::DATETIME_MUTABLE, nullable: true, options: ['comment' => '结束有效时间'])]
-    private ?\DateTimeInterface $endTime = null;
+    #[ORM\Column(type: Types::DATETIME_IMMUTABLE, nullable: true, options: ['comment' => '结束有效时间'])]
+    private ?\DateTimeImmutable $endTime = null;
 
     #[ORM\Column(type: Types::JSON, nullable: true, options: ['comment' => '限制用户群体（用户ID数组）'])]
     private ?array $allowedUsers = null;
@@ -52,13 +52,6 @@ class CommandLimit implements ApiArrayInterface
     #[ORM\Column(type: Types::BOOLEAN, nullable: false, options: ['comment' => '是否启用限制', 'default' => true])]
     private bool $isEnabled = true;
 
-    #[CreatedByColumn]
-    #[ORM\Column(nullable: true, options: ['comment' => '创建人'])]
-    private ?string $createdBy = null;
-
-    #[UpdatedByColumn]
-    #[ORM\Column(nullable: true, options: ['comment' => '更新人'])]
-    private ?string $updatedBy = null;
 
     #[CreateIpColumn]
     #[ORM\Column(length: 128, nullable: true, options: ['comment' => '创建时IP'])]
@@ -128,24 +121,24 @@ class CommandLimit implements ApiArrayInterface
         return $this;
     }
 
-    public function getStartTime(): ?\DateTimeInterface
+    public function getStartTime(): ?\DateTimeImmutable
     {
         return $this->startTime;
     }
 
-    public function setStartTime(?\DateTimeInterface $startTime): self
+    public function setStartTime(?\DateTimeImmutable $startTime): self
     {
         $this->startTime = $startTime;
 
         return $this;
     }
 
-    public function getEndTime(): ?\DateTimeInterface
+    public function getEndTime(): ?\DateTimeImmutable
     {
         return $this->endTime;
     }
 
-    public function setEndTime(?\DateTimeInterface $endTime): self
+    public function setEndTime(?\DateTimeImmutable $endTime): self
     {
         $this->endTime = $endTime;
 
@@ -188,29 +181,6 @@ class CommandLimit implements ApiArrayInterface
         return $this;
     }
 
-    public function getCreatedBy(): ?string
-    {
-        return $this->createdBy;
-    }
-
-    public function setCreatedBy(?string $createdBy): self
-    {
-        $this->createdBy = $createdBy;
-
-        return $this;
-    }
-
-    public function getUpdatedBy(): ?string
-    {
-        return $this->updatedBy;
-    }
-
-    public function setUpdatedBy(?string $updatedBy): self
-    {
-        $this->updatedBy = $updatedBy;
-
-        return $this;
-    }
 
     public function getCreatedFromIp(): ?string
     {
@@ -241,11 +211,11 @@ class CommandLimit implements ApiArrayInterface
     {
         $now = new \DateTime();
 
-        if ($this->startTime && $now < $this->startTime) {
+        if ($this->startTime !== null && $now < $this->startTime) {
             return false;
         }
 
-        if ($this->endTime && $now > $this->endTime) {
+        if ($this->endTime !== null && $now > $this->endTime) {
             return false;
         }
 
@@ -291,5 +261,14 @@ class CommandLimit implements ApiArrayInterface
             'createTime' => $this->getCreateTime()?->format('Y-m-d H:i:s'),
             'updateTime' => $this->getUpdateTime()?->format('Y-m-d H:i:s'),
         ];
+    }
+
+    public function __toString(): string
+    {
+        return sprintf('CommandLimit #%s: max total %s, max per user %s', 
+            $this->id ?? '0', 
+            $this->maxTotalUsage ?? 'unlimited', 
+            $this->maxUsagePerUser ?? 'unlimited'
+        );
     }
 }

@@ -24,7 +24,7 @@ class CommandValidationService
     {
         // 查找口令配置
         $commandConfig = $this->commandConfigRepository->findOneBy(['command' => $command]);
-        if (!$commandConfig) {
+        if ($commandConfig === null) {
             return [
                 'valid' => false,
                 'reason' => '口令不存在',
@@ -32,7 +32,7 @@ class CommandValidationService
         }
 
         // 检查优惠券是否存在
-        if (!$commandConfig->getCoupon()) {
+        if ($commandConfig->getCoupon() === null) {
             return [
                 'valid' => false,
                 'reason' => '优惠券不存在',
@@ -41,7 +41,7 @@ class CommandValidationService
 
         // 检查限制配置
         $commandLimit = $commandConfig->getCommandLimit();
-        if ($commandLimit && $commandLimit->isEnabled()) {
+        if ($commandLimit !== null && $commandLimit->isEnabled()) {
             $limitResult = $this->validateLimits($commandLimit, $commandConfig, $userId);
             if (!$limitResult['valid']) {
                 return $limitResult;
@@ -77,13 +77,13 @@ class CommandValidationService
             $this->entityManager->beginTransaction();
 
             // 增加使用次数计数
-            if ($commandConfig->getCommandLimit()) {
+            if ($commandConfig->getCommandLimit() !== null) {
                 $commandConfig->getCommandLimit()->incrementUsage();
                 $this->entityManager->persist($commandConfig->getCommandLimit());
             }
 
             // 记录成功的使用记录
-            $couponId = $commandConfig->getCoupon()->getId();
+            $couponId = (string) $commandConfig->getCoupon()->getId();
             $this->recordUsage($command, $userId, true, null, $couponId);
 
             $this->entityManager->commit();

@@ -9,13 +9,14 @@ use Tourze\CouponCommandBundle\Repository\CommandUsageRecordRepository;
 use Tourze\DoctrineIpBundle\Attribute\CreateIpColumn;
 use Tourze\DoctrineSnowflakeBundle\Service\SnowflakeIdGenerator;
 use Tourze\DoctrineTimestampBundle\Traits\CreateTimeAware;
-use Tourze\DoctrineUserBundle\Attribute\CreatedByColumn;
+use Tourze\DoctrineUserBundle\Traits\CreatedByAware;
 
 #[ORM\Entity(repositoryClass: CommandUsageRecordRepository::class)]
 #[ORM\Table(name: 'coupon_command_usage_record', options: ['comment' => '优惠券口令使用记录'])]
-class CommandUsageRecord implements ApiArrayInterface
+class CommandUsageRecord implements ApiArrayInterface, \Stringable
 {
     use CreateTimeAware;
+    use CreatedByAware;
 
     #[ORM\Id]
     #[ORM\GeneratedValue(strategy: 'CUSTOM')]
@@ -45,9 +46,6 @@ class CommandUsageRecord implements ApiArrayInterface
     #[ORM\Column(type: Types::JSON, nullable: true, options: ['comment' => '额外信息'])]
     private ?array $extraData = null;
 
-    #[CreatedByColumn]
-    #[ORM\Column(nullable: true, options: ['comment' => '创建人'])]
-    private ?string $createdBy = null;
 
     #[CreateIpColumn]
     #[ORM\Column(length: 128, nullable: true, options: ['comment' => '创建时IP'])]
@@ -142,17 +140,6 @@ class CommandUsageRecord implements ApiArrayInterface
         return $this;
     }
 
-    public function getCreatedBy(): ?string
-    {
-        return $this->createdBy;
-    }
-
-    public function setCreatedBy(?string $createdBy): self
-    {
-        $this->createdBy = $createdBy;
-
-        return $this;
-    }
 
     public function getCreatedFromIp(): ?string
     {
@@ -178,5 +165,14 @@ class CommandUsageRecord implements ApiArrayInterface
             'createTime' => $this->getCreateTime()?->format('Y-m-d H:i:s'),
             'extraData' => $this->getExtraData(),
         ];
+    }
+
+    public function __toString(): string
+    {
+        return sprintf('CommandUsageRecord #%s: User %s used command %s', 
+            $this->id ?? '0', 
+            $this->userId ?? 'N/A', 
+            $this->commandText ?? 'N/A'
+        );
     }
 }

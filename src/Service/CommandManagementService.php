@@ -43,7 +43,7 @@ class CommandManagementService
     public function updateCommandConfig(string $id, string $command): CommandConfig
     {
         $commandConfig = $this->commandConfigRepository->find($id);
-        if (!$commandConfig) {
+        if ($commandConfig === null) {
             throw new \InvalidArgumentException('口令配置不存在');
         }
 
@@ -66,7 +66,7 @@ class CommandManagementService
     public function deleteCommandConfig(string $id): bool
     {
         $commandConfig = $this->commandConfigRepository->find($id);
-        if (!$commandConfig) {
+        if ($commandConfig === null) {
             return false;
         }
 
@@ -89,12 +89,12 @@ class CommandManagementService
         ?array $allowedUserTags = null
     ): CommandLimit {
         $commandConfig = $this->commandConfigRepository->find($commandConfigId);
-        if (!$commandConfig) {
+        if ($commandConfig === null) {
             throw new \InvalidArgumentException('口令配置不存在');
         }
 
         // 检查是否已有限制配置
-        if ($commandConfig->getCommandLimit()) {
+        if ($commandConfig->getCommandLimit() !== null) {
             throw new \InvalidArgumentException('该口令已有限制配置');
         }
 
@@ -102,8 +102,8 @@ class CommandManagementService
         $commandLimit->setCommandConfig($commandConfig);
         $commandLimit->setMaxUsagePerUser($maxUsagePerUser);
         $commandLimit->setMaxTotalUsage($maxTotalUsage);
-        $commandLimit->setStartTime($startTime);
-        $commandLimit->setEndTime($endTime);
+        $commandLimit->setStartTime($startTime !== null && !$startTime instanceof \DateTimeImmutable ? \DateTimeImmutable::createFromInterface($startTime) : $startTime);
+        $commandLimit->setEndTime($endTime !== null && !$endTime instanceof \DateTimeImmutable ? \DateTimeImmutable::createFromInterface($endTime) : $endTime);
         $commandLimit->setAllowedUsers($allowedUsers);
         $commandLimit->setAllowedUserTags($allowedUserTags);
 
@@ -127,7 +127,7 @@ class CommandManagementService
         ?bool $isEnabled = null
     ): CommandLimit {
         $commandLimit = $this->commandLimitRepository->find($commandLimitId);
-        if (!$commandLimit) {
+        if ($commandLimit === null) {
             throw new \InvalidArgumentException('限制配置不存在');
         }
 
@@ -138,10 +138,10 @@ class CommandManagementService
             $commandLimit->setMaxTotalUsage($maxTotalUsage);
         }
         if ($startTime !== null) {
-            $commandLimit->setStartTime($startTime);
+            $commandLimit->setStartTime(!$startTime instanceof \DateTimeImmutable ? \DateTimeImmutable::createFromInterface($startTime) : $startTime);
         }
         if ($endTime !== null) {
-            $commandLimit->setEndTime($endTime);
+            $commandLimit->setEndTime(!$endTime instanceof \DateTimeImmutable ? \DateTimeImmutable::createFromInterface($endTime) : $endTime);
         }
         if ($allowedUsers !== null) {
             $commandLimit->setAllowedUsers($allowedUsers);
@@ -165,7 +165,7 @@ class CommandManagementService
     public function deleteCommandLimit(string $commandLimitId): bool
     {
         $commandLimit = $this->commandLimitRepository->find($commandLimitId);
-        if (!$commandLimit) {
+        if ($commandLimit === null) {
             return false;
         }
 
@@ -181,7 +181,7 @@ class CommandManagementService
     public function getCommandConfigDetail(string $id): ?array
     {
         $commandConfig = $this->commandConfigRepository->find($id);
-        if (!$commandConfig) {
+        if ($commandConfig === null) {
             return null;
         }
 
@@ -218,7 +218,7 @@ class CommandManagementService
     public function toggleCommandLimitStatus(string $commandLimitId): CommandLimit
     {
         $commandLimit = $this->commandLimitRepository->find($commandLimitId);
-        if (!$commandLimit) {
+        if ($commandLimit === null) {
             throw new \InvalidArgumentException('限制配置不存在');
         }
 

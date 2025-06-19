@@ -49,8 +49,8 @@ class CommandLimitTest extends TestCase
 
     public function test_time_constraints(): void
     {
-        $startTime = new \DateTime('2024-01-01 10:00:00');
-        $endTime = new \DateTime('2024-12-31 23:59:59');
+        $startTime = new \DateTimeImmutable('2024-01-01 10:00:00');
+        $endTime = new \DateTimeImmutable('2024-12-31 23:59:59');
 
         $this->commandLimit->setStartTime($startTime);
         $this->commandLimit->setEndTime($endTime);
@@ -91,8 +91,8 @@ class CommandLimitTest extends TestCase
     public function test_is_time_valid_with_start_time_only(): void
     {
         // 只设置开始时间
-        $pastTime = new \DateTime('-1 hour');
-        $futureTime = new \DateTime('+1 hour');
+        $pastTime = new \DateTimeImmutable('-1 hour');
+        $futureTime = new \DateTimeImmutable('+1 hour');
 
         $this->commandLimit->setStartTime($pastTime);
         $this->assertTrue($this->commandLimit->isTimeValid());
@@ -104,8 +104,8 @@ class CommandLimitTest extends TestCase
     public function test_is_time_valid_with_end_time_only(): void
     {
         // 只设置结束时间
-        $pastTime = new \DateTime('-1 hour');
-        $futureTime = new \DateTime('+1 hour');
+        $pastTime = new \DateTimeImmutable('-1 hour');
+        $futureTime = new \DateTimeImmutable('+1 hour');
 
         $this->commandLimit->setEndTime($futureTime);
         $this->assertTrue($this->commandLimit->isTimeValid());
@@ -117,16 +117,16 @@ class CommandLimitTest extends TestCase
     public function test_is_time_valid_with_both_constraints(): void
     {
         // 设置时间窗口
-        $startTime = new \DateTime('-1 hour');
-        $endTime = new \DateTime('+1 hour');
+        $startTime = new \DateTimeImmutable('-1 hour');
+        $endTime = new \DateTimeImmutable('+1 hour');
 
         $this->commandLimit->setStartTime($startTime);
         $this->commandLimit->setEndTime($endTime);
         $this->assertTrue($this->commandLimit->isTimeValid());
 
         // 过期的时间窗口
-        $expiredStart = new \DateTime('-2 hours');
-        $expiredEnd = new \DateTime('-1 hour');
+        $expiredStart = new \DateTimeImmutable('-2 hours');
+        $expiredEnd = new \DateTimeImmutable('-1 hour');
 
         $this->commandLimit->setStartTime($expiredStart);
         $this->commandLimit->setEndTime($expiredEnd);
@@ -193,8 +193,8 @@ class CommandLimitTest extends TestCase
         $this->commandLimit->setAllowedUsers(['user1', 'user2']);
         $this->commandLimit->setAllowedUserTags(['vip']);
 
-        $startTime = new \DateTime('2024-01-01 10:00:00');
-        $createTime = new \DateTime('2024-01-01 09:00:00');
+        $startTime = new \DateTimeImmutable('2024-01-01 10:00:00');
+        $createTime = new \DateTimeImmutable('2024-01-01 09:00:00');
 
         $this->commandLimit->setStartTime($startTime);
         $this->commandLimit->setCreateTime($createTime);

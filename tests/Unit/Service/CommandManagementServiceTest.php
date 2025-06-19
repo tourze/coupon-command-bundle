@@ -212,8 +212,8 @@ class CommandManagementServiceTest extends TestCase
         $commandConfigId = 'config_123';
         $maxUsagePerUser = 5;
         $maxTotalUsage = 100;
-        $startTime = new \DateTime('2024-01-01');
-        $endTime = new \DateTime('2024-12-31');
+        $startTime = new \DateTimeImmutable('2024-01-01');
+        $endTime = new \DateTimeImmutable('2024-12-31');
         $allowedUsers = ['user1', 'user2'];
         $allowedUserTags = ['vip'];
 

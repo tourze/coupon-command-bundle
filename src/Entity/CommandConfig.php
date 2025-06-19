@@ -14,14 +14,14 @@ use Tourze\DoctrineIpBundle\Attribute\CreateIpColumn;
 use Tourze\DoctrineIpBundle\Attribute\UpdateIpColumn;
 use Tourze\DoctrineSnowflakeBundle\Service\SnowflakeIdGenerator;
 use Tourze\DoctrineTimestampBundle\Traits\TimestampableAware;
-use Tourze\DoctrineUserBundle\Attribute\CreatedByColumn;
-use Tourze\DoctrineUserBundle\Attribute\UpdatedByColumn;
+use Tourze\DoctrineUserBundle\Traits\BlameableAware;
 
 #[ORM\Entity(repositoryClass: CommandConfigRepository::class)]
 #[ORM\Table(name: 'coupon_command_config', options: ['comment' => '优惠券口令'])]
-class CommandConfig implements ApiArrayInterface
+class CommandConfig implements ApiArrayInterface, \Stringable
 {
     use TimestampableAware;
+    use BlameableAware;
     #[ORM\Id]
     #[ORM\GeneratedValue(strategy: 'CUSTOM')]
     #[ORM\CustomIdGenerator(SnowflakeIdGenerator::class)]
@@ -44,13 +44,6 @@ class CommandConfig implements ApiArrayInterface
     #[ORM\OneToMany(targetEntity: CommandUsageRecord::class, mappedBy: 'commandConfig', cascade: ['persist', 'remove'])]
     private Collection $usageRecords;
 
-    #[CreatedByColumn]
-    #[ORM\Column(nullable: true, options: ['comment' => '创建人'])]
-    private ?string $createdBy = null;
-
-    #[UpdatedByColumn]
-    #[ORM\Column(nullable: true, options: ['comment' => '更新人'])]
-    private ?string $updatedBy = null;
 
     #[CreateIpColumn]
     #[ORM\Column(length: 128, nullable: true, options: ['comment' => '创建时IP'])]
@@ -190,5 +183,10 @@ class CommandConfig implements ApiArrayInterface
             'commandLimit' => $this->getCommandLimit()?->retrieveApiArray(),
             'usageCount' => $this->getUsageRecords()->count(),
         ];
+    }
+
+    public function __toString(): string
+    {
+        return sprintf('CommandConfig #%s: %s', $this->id ?? '0', $this->command ?? 'N/A');
     }
 }
