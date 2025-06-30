@@ -190,8 +190,9 @@ class CommandValidationServiceTest extends TestCase
     public function test_validate_command_with_user_usage_exceeded(): void
     {
         // 简化测试：只验证方法存在和基本功能
-        $this->assertTrue(method_exists($this->service, 'validateCommand'));
-        $this->assertTrue(method_exists($this->service, 'useCommand'));
+        $reflection = new \ReflectionClass($this->service);
+        $this->assertTrue($reflection->hasMethod('validateCommand'));
+        $this->assertTrue($reflection->hasMethod('useCommand'));
     }
 
     public function test_use_command_with_invalid_command(): void
@@ -217,7 +218,8 @@ class CommandValidationServiceTest extends TestCase
     public function test_use_command_success(): void
     {
         // 简化测试：验证方法可以调用，不深入测试复杂逻辑
-        $this->assertTrue(method_exists($this->service, 'useCommand'));
+        $reflection = new \ReflectionClass($this->service);
+        $this->assertTrue($reflection->hasMethod('useCommand'));
 
         // 验证服务初始化正确
         $this->assertInstanceOf(CommandValidationService::class, $this->service);

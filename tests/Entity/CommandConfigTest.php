@@ -21,7 +21,7 @@ class CommandConfigTest extends TestCase
         $this->assertInstanceOf(CommandConfig::class, $this->commandConfig);
         $this->assertNull($this->commandConfig->getId());
         $this->assertNull($this->commandConfig->getCommand());
-        $this->assertEmpty($this->commandConfig->getUsageRecords());
+        $this->assertCount(0, $this->commandConfig->getUsageRecords());
     }
 
     public function test_set_and_get_command(): void

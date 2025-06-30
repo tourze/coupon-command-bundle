@@ -209,6 +209,8 @@ class ValidateCouponCommandTest extends TestCase
         $services = $this->procedure::getSubscribedServices();
         // 由于现在是构造函数注入，这个方法可能不再需要
         // 但保留测试以确保兼容性
+        $this->assertNotEmpty($services);
+        $this->assertContainsOnly('string', array_keys($services));
     }
 
     public function test_property_assignments(): void

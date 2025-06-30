@@ -52,11 +52,12 @@ class CommandUsageRecordRepositoryTest extends TestCase
 
     public function test_method_signatures_exist(): void
     {
-        // 验证所有必需的方法都存在
-        $this->assertTrue(method_exists($this->repository, 'findByUserId'));
-        $this->assertTrue(method_exists($this->repository, 'findByCommandConfigId'));
-        $this->assertTrue(method_exists($this->repository, 'countByUserAndCommandConfig'));
-        $this->assertTrue(method_exists($this->repository, 'countSuccessByUserAndCommandConfig'));
+        // 验证所有必需的方法都存在并且可调用 - 直接检查方法参数
+        $reflection = new \ReflectionClass($this->repository);
+        $this->assertTrue($reflection->hasMethod('findByUserId'));
+        $this->assertTrue($reflection->hasMethod('findByCommandConfigId'));
+        $this->assertTrue($reflection->hasMethod('countByUserAndCommandConfig'));
+        $this->assertTrue($reflection->hasMethod('countSuccessByUserAndCommandConfig'));
     }
 
     public function test_find_by_user_id_method_signature(): void
@@ -66,11 +67,11 @@ class CommandUsageRecordRepositoryTest extends TestCase
         
         $this->assertCount(1, $parameters);
         $this->assertEquals('userId', $parameters[0]->getName());
-        $this->assertEquals('string', $parameters[0]->getType()->getName());
+        $this->assertEquals('string', (string) $parameters[0]->getType());
         
         $returnType = $reflection->getReturnType();
         $this->assertNotNull($returnType);
-        $this->assertEquals('array', $returnType->getName());
+        $this->assertEquals('array', (string) $returnType);
     }
 
     public function test_find_by_command_config_id_method_signature(): void
@@ -80,11 +81,11 @@ class CommandUsageRecordRepositoryTest extends TestCase
         
         $this->assertCount(1, $parameters);
         $this->assertEquals('commandConfigId', $parameters[0]->getName());
-        $this->assertEquals('string', $parameters[0]->getType()->getName());
+        $this->assertEquals('string', (string) $parameters[0]->getType());
         
         $returnType = $reflection->getReturnType();
         $this->assertNotNull($returnType);
-        $this->assertEquals('array', $returnType->getName());
+        $this->assertEquals('array', (string) $returnType);
     }
 
     public function test_count_by_user_and_command_config_method_signature(): void
@@ -94,13 +95,13 @@ class CommandUsageRecordRepositoryTest extends TestCase
         
         $this->assertCount(2, $parameters);
         $this->assertEquals('userId', $parameters[0]->getName());
-        $this->assertEquals('string', $parameters[0]->getType()->getName());
+        $this->assertEquals('string', (string) $parameters[0]->getType());
         $this->assertEquals('commandConfigId', $parameters[1]->getName());
-        $this->assertEquals('string', $parameters[1]->getType()->getName());
+        $this->assertEquals('string', (string) $parameters[1]->getType());
         
         $returnType = $reflection->getReturnType();
         $this->assertNotNull($returnType);
-        $this->assertEquals('int', $returnType->getName());
+        $this->assertEquals('int', (string) $returnType);
     }
 
     public function test_count_success_by_user_and_command_config_method_signature(): void
@@ -110,13 +111,13 @@ class CommandUsageRecordRepositoryTest extends TestCase
         
         $this->assertCount(2, $parameters);
         $this->assertEquals('userId', $parameters[0]->getName());
-        $this->assertEquals('string', $parameters[0]->getType()->getName());
+        $this->assertEquals('string', (string) $parameters[0]->getType());
         $this->assertEquals('commandConfigId', $parameters[1]->getName());
-        $this->assertEquals('string', $parameters[1]->getType()->getName());
+        $this->assertEquals('string', (string) $parameters[1]->getType());
         
         $returnType = $reflection->getReturnType();
         $this->assertNotNull($returnType);
-        $this->assertEquals('int', $returnType->getName());
+        $this->assertEquals('int', (string) $returnType);
     }
 
     public function test_repository_constants_and_properties(): void

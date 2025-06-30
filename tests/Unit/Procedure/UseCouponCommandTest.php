@@ -4,7 +4,6 @@ namespace Tourze\CouponCommandBundle\Tests\Unit\Procedure;
 
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
-use Psr\Container\ContainerInterface;
 use Tourze\CouponCommandBundle\Procedure\UseCouponCommand;
 use Tourze\CouponCommandBundle\Service\CommandValidationService;
 
@@ -12,12 +11,10 @@ class UseCouponCommandTest extends TestCase
 {
     private UseCouponCommand $procedure;
     private CommandValidationService|MockObject $commandValidationService;
-    private MockObject|ContainerInterface $container;
 
     protected function setUp(): void
     {
         $this->commandValidationService = $this->createMock(CommandValidationService::class);
-        $this->container = $this->createMock(ContainerInterface::class);
 
         $this->procedure = new UseCouponCommand($this->commandValidationService);
     }
@@ -209,10 +206,6 @@ class UseCouponCommandTest extends TestCase
         $this->assertEquals($userId, $this->procedure->userId);
     }
 
-    public function test_required_properties_validation(): void
-    {
-        $this->markTestSkipped('This test is designed to verify framework-level validation attributes, which is not suitable for a unit test that bypasses the framework. This should be covered in an integration test.');
-    }
 
     public function test_successful_coupon_acquisition_flow(): void
     {

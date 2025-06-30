@@ -9,6 +9,7 @@ use Tourze\CouponCommandBundle\Repository\CommandLimitRepository;
 use Tourze\DoctrineIpBundle\Attribute\CreateIpColumn;
 use Tourze\DoctrineIpBundle\Attribute\UpdateIpColumn;
 use Tourze\DoctrineSnowflakeBundle\Service\SnowflakeIdGenerator;
+use Tourze\DoctrineSnowflakeBundle\Traits\SnowflakeKeyAware;
 use Tourze\DoctrineTimestampBundle\Traits\TimestampableAware;
 use Tourze\DoctrineUserBundle\Traits\BlameableAware;
 
@@ -16,13 +17,9 @@ use Tourze\DoctrineUserBundle\Traits\BlameableAware;
 #[ORM\Table(name: 'coupon_command_limit', options: ['comment' => '优惠券口令限制配置'])]
 class CommandLimit implements ApiArrayInterface, \Stringable
 {
+    use SnowflakeKeyAware;
     use TimestampableAware;
     use BlameableAware;
-    #[ORM\Id]
-    #[ORM\GeneratedValue(strategy: 'CUSTOM')]
-    #[ORM\CustomIdGenerator(SnowflakeIdGenerator::class)]
-    #[ORM\Column(type: Types::BIGINT, nullable: false, options: ['comment' => 'ID'])]
-    private ?string $id = null;
 
     #[ORM\OneToOne(targetEntity: CommandConfig::class, inversedBy: 'commandLimit')]
     #[ORM\JoinColumn(nullable: false, onDelete: 'CASCADE')]
@@ -61,10 +58,6 @@ class CommandLimit implements ApiArrayInterface, \Stringable
     #[ORM\Column(length: 128, nullable: true, options: ['comment' => '更新时IP'])]
     private ?string $updatedFromIp = null;
 
-    public function getId(): ?string
-    {
-        return $this->id;
-    }
 
     public function getCommandConfig(): ?CommandConfig
     {

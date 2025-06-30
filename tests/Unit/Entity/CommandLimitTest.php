@@ -201,7 +201,6 @@ class CommandLimitTest extends TestCase
 
         $apiArray = $this->commandLimit->retrieveApiArray();
 
-        $this->assertIsArray($apiArray);
         $this->assertEquals(5, $apiArray['maxUsagePerUser']);
         $this->assertEquals(100, $apiArray['maxTotalUsage']);
         $this->assertEquals(25, $apiArray['currentUsage']);

@@ -48,16 +48,6 @@ class CommandConfigRepositoryTest extends TestCase
         $this->assertTrue($parentReflection->getName() === ServiceEntityRepository::class);
     }
 
-    public function test_method_signatures_exist(): void
-    {
-        // 验证所有必需的方法都存在
-        $this->assertTrue(method_exists($this->repository, 'findByCommand'));
-        $this->assertTrue(method_exists($this->repository, 'findByCouponId'));
-        $this->assertTrue(method_exists($this->repository, 'findAllWithLimits'));
-        $this->assertTrue(method_exists($this->repository, 'findAllWithEnabledLimits'));
-        $this->assertTrue(method_exists($this->repository, 'isCommandExists'));
-        $this->assertTrue(method_exists($this->repository, 'getUsageStats'));
-    }
 
     public function test_find_by_command_method_signature(): void
     {
@@ -66,7 +56,7 @@ class CommandConfigRepositoryTest extends TestCase
 
         $this->assertCount(1, $parameters);
         $this->assertEquals('command', $parameters[0]->getName());
-        $this->assertEquals('string', $parameters[0]->getType()->getName());
+        $this->assertEquals('string', (string) $parameters[0]->getType());
 
         $returnType = $reflection->getReturnType();
         $this->assertNotNull($returnType);
@@ -80,7 +70,7 @@ class CommandConfigRepositoryTest extends TestCase
 
         $this->assertCount(1, $parameters);
         $this->assertEquals('couponId', $parameters[0]->getName());
-        $this->assertEquals('string', $parameters[0]->getType()->getName());
+        $this->assertEquals('string', (string) $parameters[0]->getType());
 
         $returnType = $reflection->getReturnType();
         $this->assertNotNull($returnType);
@@ -96,7 +86,7 @@ class CommandConfigRepositoryTest extends TestCase
 
         $returnType = $reflection->getReturnType();
         $this->assertNotNull($returnType);
-        $this->assertEquals('array', $returnType->getName());
+        $this->assertEquals('array', (string) $returnType);
     }
 
     public function test_find_all_with_enabled_limits_method_signature(): void
@@ -108,7 +98,7 @@ class CommandConfigRepositoryTest extends TestCase
 
         $returnType = $reflection->getReturnType();
         $this->assertNotNull($returnType);
-        $this->assertEquals('array', $returnType->getName());
+        $this->assertEquals('array', (string) $returnType);
     }
 
     public function test_is_command_exists_method_signature(): void
@@ -118,13 +108,13 @@ class CommandConfigRepositoryTest extends TestCase
 
         $this->assertCount(2, $parameters);
         $this->assertEquals('command', $parameters[0]->getName());
-        $this->assertEquals('string', $parameters[0]->getType()->getName());
+        $this->assertEquals('string', (string) $parameters[0]->getType());
         $this->assertEquals('excludeId', $parameters[1]->getName());
         $this->assertTrue($parameters[1]->allowsNull());
 
         $returnType = $reflection->getReturnType();
         $this->assertNotNull($returnType);
-        $this->assertEquals('bool', $returnType->getName());
+        $this->assertEquals('bool', (string) $returnType);
     }
 
     public function test_get_usage_stats_method_signature(): void
@@ -134,11 +124,11 @@ class CommandConfigRepositoryTest extends TestCase
 
         $this->assertCount(1, $parameters);
         $this->assertEquals('commandConfigId', $parameters[0]->getName());
-        $this->assertEquals('string', $parameters[0]->getType()->getName());
+        $this->assertEquals('string', (string) $parameters[0]->getType());
 
         $returnType = $reflection->getReturnType();
         $this->assertNotNull($returnType);
-        $this->assertEquals('array', $returnType->getName());
+        $this->assertEquals('array', (string) $returnType);
     }
 
     public function test_repository_constants_and_properties(): void

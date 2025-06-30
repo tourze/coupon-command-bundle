@@ -473,7 +473,6 @@ class CommandManagementServiceTest extends TestCase
 
         $result = $this->service->getCommandConfigList();
 
-        $this->assertIsArray($result);
         $this->assertCount(2, $result);
         
         $this->assertEquals(['id' => 'config_1', 'command' => 'CMD1'], $result[0]['config']);

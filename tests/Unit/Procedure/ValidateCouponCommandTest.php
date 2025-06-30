@@ -216,10 +216,6 @@ class ValidateCouponCommandTest extends TestCase
         $this->assertArrayHasKey('commandLimit', $mockResult['commandConfig']);
     }
 
-    public function test_get_subscribed_services(): void
-    {
-        $this->markTestSkipped('This test is not applicable anymore.');
-    }
 
     public function test_property_assignments(): void
     {

@@ -5,6 +5,7 @@ namespace Tourze\CouponCommandBundle\Service;
 use Doctrine\ORM\EntityManagerInterface;
 use Tourze\CouponCommandBundle\Entity\CommandConfig;
 use Tourze\CouponCommandBundle\Entity\CommandLimit;
+use Tourze\CouponCommandBundle\Exception\CommandConfigurationException;
 use Tourze\CouponCommandBundle\Repository\CommandConfigRepository;
 use Tourze\CouponCommandBundle\Repository\CommandLimitRepository;
 use Tourze\CouponCoreBundle\Entity\Coupon;
@@ -24,7 +25,7 @@ class CommandManagementService
     {
         // 检查口令是否重复
         if ($this->commandConfigRepository->isCommandExists($command)) {
-            throw new \InvalidArgumentException('口令已存在');
+            throw new CommandConfigurationException('口令已存在');
         }
 
         $commandConfig = new CommandConfig();
@@ -44,12 +45,12 @@ class CommandManagementService
     {
         $commandConfig = $this->commandConfigRepository->find($id);
         if ($commandConfig === null) {
-            throw new \InvalidArgumentException('口令配置不存在');
+            throw new CommandConfigurationException('口令配置不存在');
         }
 
         // 检查口令是否重复
         if ($this->commandConfigRepository->isCommandExists($command, $id)) {
-            throw new \InvalidArgumentException('口令已存在');
+            throw new CommandConfigurationException('口令已存在');
         }
 
         $commandConfig->setCommand($command);
@@ -90,12 +91,12 @@ class CommandManagementService
     ): CommandLimit {
         $commandConfig = $this->commandConfigRepository->find($commandConfigId);
         if ($commandConfig === null) {
-            throw new \InvalidArgumentException('口令配置不存在');
+            throw new CommandConfigurationException('口令配置不存在');
         }
 
         // 检查是否已有限制配置
         if ($commandConfig->getCommandLimit() !== null) {
-            throw new \InvalidArgumentException('该口令已有限制配置');
+            throw new CommandConfigurationException('该口令已有限制配置');
         }
 
         $commandLimit = new CommandLimit();
@@ -128,7 +129,7 @@ class CommandManagementService
     ): CommandLimit {
         $commandLimit = $this->commandLimitRepository->find($commandLimitId);
         if ($commandLimit === null) {
-            throw new \InvalidArgumentException('限制配置不存在');
+            throw new CommandConfigurationException('限制配置不存在');
         }
 
         if ($maxUsagePerUser !== null) {
@@ -219,7 +220,7 @@ class CommandManagementService
     {
         $commandLimit = $this->commandLimitRepository->find($commandLimitId);
         if ($commandLimit === null) {
-            throw new \InvalidArgumentException('限制配置不存在');
+            throw new CommandConfigurationException('限制配置不存在');
         }
 
         $commandLimit->setIsEnabled(!$commandLimit->isEnabled());

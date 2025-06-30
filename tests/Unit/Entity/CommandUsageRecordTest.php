@@ -145,7 +145,6 @@ class CommandUsageRecordTest extends TestCase
 
         $apiArray = $this->usageRecord->retrieveApiArray();
 
-        $this->assertIsArray($apiArray);
         $this->assertEquals($userId, $apiArray['userId']);
         $this->assertEquals($commandText, $apiArray['commandText']);
         $this->assertEquals($couponId, $apiArray['couponId']);

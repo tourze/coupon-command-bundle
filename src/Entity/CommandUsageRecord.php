@@ -8,6 +8,7 @@ use Tourze\Arrayable\ApiArrayInterface;
 use Tourze\CouponCommandBundle\Repository\CommandUsageRecordRepository;
 use Tourze\DoctrineIpBundle\Attribute\CreateIpColumn;
 use Tourze\DoctrineSnowflakeBundle\Service\SnowflakeIdGenerator;
+use Tourze\DoctrineSnowflakeBundle\Traits\SnowflakeKeyAware;
 use Tourze\DoctrineTimestampBundle\Traits\CreateTimeAware;
 use Tourze\DoctrineUserBundle\Traits\CreatedByAware;
 
@@ -15,14 +16,9 @@ use Tourze\DoctrineUserBundle\Traits\CreatedByAware;
 #[ORM\Table(name: 'coupon_command_usage_record', options: ['comment' => '优惠券口令使用记录'])]
 class CommandUsageRecord implements ApiArrayInterface, \Stringable
 {
+    use SnowflakeKeyAware;
     use CreateTimeAware;
     use CreatedByAware;
-
-    #[ORM\Id]
-    #[ORM\GeneratedValue(strategy: 'CUSTOM')]
-    #[ORM\CustomIdGenerator(SnowflakeIdGenerator::class)]
-    #[ORM\Column(type: Types::BIGINT, nullable: false, options: ['comment' => 'ID'])]
-    private ?string $id = null;
 
     #[ORM\ManyToOne(targetEntity: CommandConfig::class)]
     #[ORM\JoinColumn(nullable: false, onDelete: 'CASCADE')]
@@ -51,10 +47,6 @@ class CommandUsageRecord implements ApiArrayInterface, \Stringable
     #[ORM\Column(length: 128, nullable: true, options: ['comment' => '创建时IP'])]
     private ?string $createdFromIp = null;
 
-    public function getId(): ?string
-    {
-        return $this->id;
-    }
 
     public function getCommandConfig(): ?CommandConfig
     {

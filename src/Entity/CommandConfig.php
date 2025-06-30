@@ -13,6 +13,7 @@ use Tourze\CouponCoreBundle\Entity\Coupon;
 use Tourze\DoctrineIpBundle\Attribute\CreateIpColumn;
 use Tourze\DoctrineIpBundle\Attribute\UpdateIpColumn;
 use Tourze\DoctrineSnowflakeBundle\Service\SnowflakeIdGenerator;
+use Tourze\DoctrineSnowflakeBundle\Traits\SnowflakeKeyAware;
 use Tourze\DoctrineTimestampBundle\Traits\TimestampableAware;
 use Tourze\DoctrineUserBundle\Traits\BlameableAware;
 
@@ -20,13 +21,9 @@ use Tourze\DoctrineUserBundle\Traits\BlameableAware;
 #[ORM\Table(name: 'coupon_command_config', options: ['comment' => '优惠券口令'])]
 class CommandConfig implements ApiArrayInterface, \Stringable
 {
+    use SnowflakeKeyAware;
     use TimestampableAware;
     use BlameableAware;
-    #[ORM\Id]
-    #[ORM\GeneratedValue(strategy: 'CUSTOM')]
-    #[ORM\CustomIdGenerator(SnowflakeIdGenerator::class)]
-    #[ORM\Column(type: Types::BIGINT, nullable: false, options: ['comment' => 'ID'])]
-    private ?string $id = null;
 
     #[Ignore]
     #[ORM\OneToOne(targetEntity: Coupon::class, inversedBy: 'commandConfig', cascade: ['persist', 'remove'])]
@@ -58,10 +55,6 @@ class CommandConfig implements ApiArrayInterface, \Stringable
         $this->usageRecords = new ArrayCollection();
     }
 
-    public function getId(): ?string
-    {
-        return $this->id;
-    }
 
     public function setCreatedBy(?string $createdBy): self
     {
