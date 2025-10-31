@@ -42,7 +42,7 @@
     "doctrine/doctrine-fixtures-bundle": "^4.0",
     "phpstan/phpstan": "^2.1",
     "phpunit/phpunit": "^11.5",
-    "tourze/doctrine-resolve-target-entity-bundle": "0.0.*",
+    "tourze/doctrine-resolve-target-entity-bundle": "1.*",
     "tourze/phpunit-base": "1.*",
     "tourze/phpunit-doctrine-entity": "1.*",
     "tourze/phpunit-symfony-kernel-test": "0.0.*",
