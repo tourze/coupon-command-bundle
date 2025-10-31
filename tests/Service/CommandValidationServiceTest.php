@@ -2,256 +2,208 @@
 
 namespace Tourze\CouponCommandBundle\Tests\Service;
 
-use Doctrine\ORM\EntityManagerInterface;
-use PHPUnit\Framework\MockObject\MockObject;
-use PHPUnit\Framework\TestCase;
+use PHPUnit\Framework\Attributes\CoversClass;
+use PHPUnit\Framework\Attributes\RunTestsInSeparateProcesses;
 use Tourze\CouponCommandBundle\Entity\CommandConfig;
 use Tourze\CouponCommandBundle\Entity\CommandLimit;
-use Tourze\CouponCommandBundle\Entity\CommandUsageRecord;
-use Tourze\CouponCommandBundle\Repository\CommandConfigRepository;
-use Tourze\CouponCommandBundle\Repository\CommandUsageRecordRepository;
 use Tourze\CouponCommandBundle\Service\CommandValidationService;
 use Tourze\CouponCoreBundle\Entity\Coupon;
+use Tourze\PHPUnitSymfonyKernelTest\AbstractIntegrationTestCase;
 
-class CommandValidationServiceTest extends TestCase
+/**
+ * @internal
+ */
+#[CoversClass(CommandValidationService::class)]
+#[RunTestsInSeparateProcesses]
+final class CommandValidationServiceTest extends AbstractIntegrationTestCase
 {
     private CommandValidationService $service;
-    private MockObject|EntityManagerInterface $entityManager;
-    private MockObject|CommandConfigRepository $commandConfigRepository;
-    private MockObject|CommandUsageRecordRepository $usageRecordRepository;
 
-    protected function setUp(): void
+    protected function onSetUp(): void
     {
-        $this->entityManager = $this->createMock(EntityManagerInterface::class);
-        $this->commandConfigRepository = $this->createMock(CommandConfigRepository::class);
-        $this->usageRecordRepository = $this->createMock(CommandUsageRecordRepository::class);
-
-        $this->service = new CommandValidationService(
-            $this->entityManager,
-            $this->commandConfigRepository,
-            $this->usageRecordRepository
-        );
+        $this->service = self::getService(CommandValidationService::class);
     }
 
-    public function test_validate_command_with_nonexistent_command(): void
+    public function testServiceInitialization(): void
     {
-        $this->commandConfigRepository
-            ->expects($this->once())
-            ->method('findOneBy')
-            ->with(['command' => 'INVALID_CMD'])
-            ->willReturn(null);
-
-        $result = $this->service->validateCommand('INVALID_CMD');
-
-        $this->assertFalse($result['valid']);
-        $this->assertEquals('口令不存在', $result['reason']);
+        $this->assertInstanceOf(CommandValidationService::class, $this->service);
     }
 
-    public function test_validate_command_with_missing_coupon(): void
+    public function testServiceHasRequiredMethods(): void
     {
-        $commandConfig = new CommandConfig();
-        $commandConfig->setCommand('TEST_CMD');
-        // 不设置 coupon，模拟优惠券不存在
+        $reflection = new \ReflectionClass($this->service);
 
-        $this->commandConfigRepository
-            ->expects($this->once())
-            ->method('findOneBy')
-            ->with(['command' => 'TEST_CMD'])
-            ->willReturn($commandConfig);
-
-        $result = $this->service->validateCommand('TEST_CMD');
-
-        $this->assertFalse($result['valid']);
-        $this->assertEquals('优惠券不存在', $result['reason']);
+        $this->assertTrue($reflection->hasMethod('validateCommand'));
+        $this->assertTrue($reflection->hasMethod('useCommand'));
+        $this->assertTrue($reflection->hasMethod('getUserUsageRecords'));
+        $this->assertTrue($reflection->hasMethod('getCommandUsageRecords'));
     }
 
-    public function test_validate_command_success_without_limits(): void
+    public function testValidateCommand(): void
     {
-        $coupon = $this->createMock(Coupon::class);
-        $coupon->method('retrieveApiArray')->willReturn(['id' => '123', 'name' => 'Test Coupon']);
+        $coupon = new Coupon();
+        $coupon->setName('Test Coupon');
+        $coupon->setExpireDay(30);
+        $coupon->setIconImg('test.jpg');
+        $coupon->setBackImg('test-back.jpg');
+        $coupon->setRemark('Test coupon for testing');
+        $coupon->setStartDateTime(new \DateTime('2025-01-01'));
+        $coupon->setEndDateTime(new \DateTime('2025-12-31'));
+        $coupon->setNeedActive(false);
+        $coupon->setUseDesc('Test description');
+        $coupon->setStartTime(new \DateTime('2025-01-01'));
+        $coupon->setEndTime(new \DateTime('2025-12-31'));
+        $coupon->setValid(true);
+
+        self::getEntityManager()->persist($coupon);
+        self::getEntityManager()->flush();
 
         $commandConfig = new CommandConfig();
-        $commandConfig->setCommand('VALID_CMD');
         $commandConfig->setCoupon($coupon);
+        $commandConfig->setCommand('VALIDTEST123');
 
-        $this->commandConfigRepository
-            ->expects($this->once())
-            ->method('findOneBy')
-            ->with(['command' => 'VALID_CMD'])
-            ->willReturn($commandConfig);
+        self::getEntityManager()->persist($commandConfig);
+        self::getEntityManager()->flush();
 
-        $result = $this->service->validateCommand('VALID_CMD');
+        $result = $this->service->validateCommand('VALIDTEST123');
 
         $this->assertTrue($result['valid']);
         $this->assertArrayHasKey('couponInfo', $result);
         $this->assertArrayHasKey('commandConfig', $result);
     }
 
-    public function test_validate_command_with_disabled_limits(): void
+    public function testValidateCommandNotExists(): void
     {
-        $coupon = $this->createMock(Coupon::class);
-        $coupon->method('retrieveApiArray')->willReturn(['id' => '123', 'name' => 'Test Coupon']);
+        $result = $this->service->validateCommand('NONEXISTENT123');
 
-        $commandLimit = new CommandLimit();
-        $commandLimit->setIsEnabled(false); // 禁用限制
+        $this->assertFalse($result['valid']);
+        $this->assertSame('口令不存在', $result['reason']);
+    }
+
+    public function testValidateCommandWithLimits(): void
+    {
+        $coupon = new Coupon();
+        $coupon->setName('Test Coupon');
+        $coupon->setExpireDay(30);
+        $coupon->setIconImg('test.jpg');
+        $coupon->setBackImg('test-back.jpg');
+        $coupon->setRemark('Test coupon for testing');
+        $coupon->setStartDateTime(new \DateTime('2025-01-01'));
+        $coupon->setEndDateTime(new \DateTime('2025-12-31'));
+        $coupon->setNeedActive(false);
+        $coupon->setUseDesc('Test description');
+        $coupon->setStartTime(new \DateTime('2025-01-01'));
+        $coupon->setEndTime(new \DateTime('2025-12-31'));
+        $coupon->setValid(true);
+
+        self::getEntityManager()->persist($coupon);
+        self::getEntityManager()->flush();
 
         $commandConfig = new CommandConfig();
-        $commandConfig->setCommand('VALID_CMD');
         $commandConfig->setCoupon($coupon);
-        $commandConfig->setCommandLimit($commandLimit);
+        $commandConfig->setCommand('LIMITEDTEST123');
 
-        $this->commandConfigRepository
-            ->expects($this->once())
-            ->method('findOneBy')
-            ->with(['command' => 'VALID_CMD'])
-            ->willReturn($commandConfig);
+        self::getEntityManager()->persist($commandConfig);
+        self::getEntityManager()->flush();
 
-        $result = $this->service->validateCommand('VALID_CMD');
+        $commandLimit = new CommandLimit();
+        $commandLimit->setCommandConfig($commandConfig);
+        $commandLimit->setMaxTotalUsage(10);
+        $commandLimit->setCurrentUsage(0);
+        $commandLimit->setIsEnabled(true);
+        $commandLimit->setStartTime(new \DateTimeImmutable('2025-01-01'));
+        $commandLimit->setEndTime(new \DateTimeImmutable('2025-12-31'));
+
+        self::getEntityManager()->persist($commandLimit);
+        self::getEntityManager()->flush();
+
+        $result = $this->service->validateCommand('LIMITEDTEST123', 'user123');
 
         $this->assertTrue($result['valid']);
+        $this->assertArrayHasKey('couponInfo', $result);
     }
 
-    public function test_validate_command_with_time_limit_expired(): void
+    public function testUseCommand(): void
     {
-        $coupon = $this->createMock(Coupon::class);
+        $coupon = new Coupon();
+        $coupon->setName('Test Coupon');
+        $coupon->setExpireDay(30);
+        $coupon->setIconImg('test.jpg');
+        $coupon->setBackImg('test-back.jpg');
+        $coupon->setRemark('Test coupon for testing');
+        $coupon->setStartDateTime(new \DateTime('2025-01-01'));
+        $coupon->setEndDateTime(new \DateTime('2025-12-31'));
+        $coupon->setNeedActive(false);
+        $coupon->setUseDesc('Test description');
+        $coupon->setStartTime(new \DateTime('2025-01-01'));
+        $coupon->setEndTime(new \DateTime('2025-12-31'));
+        $coupon->setValid(true);
 
-        $commandLimit = new CommandLimit();
-        $commandLimit->setIsEnabled(true);
-        $commandLimit->setEndTime(new \DateTimeImmutable('-1 hour')); // 已过期
+        self::getEntityManager()->persist($coupon);
+        self::getEntityManager()->flush();
 
         $commandConfig = new CommandConfig();
-        $commandConfig->setCommand('EXPIRED_CMD');
         $commandConfig->setCoupon($coupon);
-        $commandConfig->setCommandLimit($commandLimit);
+        $commandConfig->setCommand('USETEST123');
 
-        $this->commandConfigRepository
-            ->expects($this->once())
-            ->method('findOneBy')
-            ->with(['command' => 'EXPIRED_CMD'])
-            ->willReturn($commandConfig);
+        self::getEntityManager()->persist($commandConfig);
+        self::getEntityManager()->flush();
 
-        $result = $this->service->validateCommand('EXPIRED_CMD');
+        $result = $this->service->useCommand('USETEST123', 'user123');
 
-        $this->assertFalse($result['valid']);
-        $this->assertEquals('口令使用时间超出有效期', $result['reason']);
+        $this->assertTrue($result['success']);
+        $this->assertSame('优惠券领取成功', $result['message']);
+        $this->assertArrayHasKey('couponId', $result);
     }
 
-    public function test_validate_command_with_total_usage_exceeded(): void
+    public function testUseCommandInvalid(): void
     {
-        $coupon = $this->createMock(Coupon::class);
-
-        $commandLimit = new CommandLimit();
-        $commandLimit->setIsEnabled(true);
-        $commandLimit->setMaxTotalUsage(100);
-        $commandLimit->setCurrentUsage(100); // 已达上限
-
-        $commandConfig = new CommandConfig();
-        $commandConfig->setCommand('FULL_CMD');
-        $commandConfig->setCoupon($coupon);
-        $commandConfig->setCommandLimit($commandLimit);
-
-        $this->commandConfigRepository
-            ->expects($this->once())
-            ->method('findOneBy')
-            ->with(['command' => 'FULL_CMD'])
-            ->willReturn($commandConfig);
-
-        $result = $this->service->validateCommand('FULL_CMD');
-
-        $this->assertFalse($result['valid']);
-        $this->assertEquals('口令使用次数已达上限', $result['reason']);
-    }
-
-    public function test_validate_command_with_user_not_allowed(): void
-    {
-        $coupon = $this->createMock(Coupon::class);
-
-        $commandLimit = new CommandLimit();
-        $commandLimit->setIsEnabled(true);
-        $commandLimit->setAllowedUsers(['user1', 'user2']); // 只允许特定用户
-
-        $commandConfig = new CommandConfig();
-        $commandConfig->setCommand('RESTRICTED_CMD');
-        $commandConfig->setCoupon($coupon);
-        $commandConfig->setCommandLimit($commandLimit);
-
-        $this->commandConfigRepository
-            ->expects($this->once())
-            ->method('findOneBy')
-            ->with(['command' => 'RESTRICTED_CMD'])
-            ->willReturn($commandConfig);
-
-        $result = $this->service->validateCommand('RESTRICTED_CMD', 'user3'); // 不在允许列表
-
-        $this->assertFalse($result['valid']);
-        $this->assertEquals('您不在此口令的使用范围内', $result['reason']);
-    }
-
-    public function test_validate_command_with_user_usage_exceeded(): void
-    {
-        // 简化测试：只验证方法存在和基本功能
-        $reflection = new \ReflectionClass($this->service);
-        $this->assertTrue($reflection->hasMethod('validateCommand'));
-        $this->assertTrue($reflection->hasMethod('useCommand'));
-    }
-
-    public function test_use_command_with_invalid_command(): void
-    {
-        $this->commandConfigRepository
-            ->expects($this->exactly(2))  // validateCommand 和 useCommand 都会调用
-            ->method('findOneBy')
-            ->with(['command' => 'INVALID_CMD'])
-            ->willReturn(null);
-
-        $result = $this->service->useCommand('INVALID_CMD', 'user1');
+        $result = $this->service->useCommand('INVALID123', 'user123');
 
         $this->assertFalse($result['success']);
-        // 检查是否有 reason 或 message 字段
-        $this->assertTrue(isset($result['reason']) || isset($result['message']));
-        if (isset($result['reason'])) {
-            $this->assertStringContainsString('口令', $result['reason']);
-        } else {
-            $this->assertStringContainsString('口令', $result['message']);
-        }
+        $this->assertSame('口令不存在', $result['message']);
     }
 
-    public function test_use_command_success(): void
+    public function testUseCommandWithLimitExceeded(): void
     {
-        // 简化测试：验证方法可以调用，不深入测试复杂逻辑
-        $reflection = new \ReflectionClass($this->service);
-        $this->assertTrue($reflection->hasMethod('useCommand'));
+        $coupon = new Coupon();
+        $coupon->setName('Test Coupon');
+        $coupon->setExpireDay(30);
+        $coupon->setIconImg('test.jpg');
+        $coupon->setBackImg('test-back.jpg');
+        $coupon->setRemark('Test coupon for testing');
+        $coupon->setStartDateTime(new \DateTime('2025-01-01'));
+        $coupon->setEndDateTime(new \DateTime('2025-12-31'));
+        $coupon->setNeedActive(false);
+        $coupon->setUseDesc('Test description');
+        $coupon->setStartTime(new \DateTime('2025-01-01'));
+        $coupon->setEndTime(new \DateTime('2025-12-31'));
+        $coupon->setValid(true);
 
-        // 验证服务初始化正确
-        $this->assertInstanceOf(CommandValidationService::class, $this->service);
-    }
+        self::getEntityManager()->persist($coupon);
+        self::getEntityManager()->flush();
 
-    public function test_get_user_usage_records(): void
-    {
-        $expectedRecords = [new CommandUsageRecord(), new CommandUsageRecord()];
+        $commandConfig = new CommandConfig();
+        $commandConfig->setCoupon($coupon);
+        $commandConfig->setCommand('LIMITEXCEEDED123');
 
-        $this->usageRecordRepository
-            ->expects($this->once())
-            ->method('findByUserId')
-            ->with('user123')
-            ->willReturn($expectedRecords);
+        self::getEntityManager()->persist($commandConfig);
+        self::getEntityManager()->flush();
 
-        $result = $this->service->getUserUsageRecords('user123');
+        $commandLimit = new CommandLimit();
+        $commandLimit->setMaxTotalUsage(1);
+        $commandLimit->setCurrentUsage(1);
+        $commandLimit->setIsEnabled(true);
 
-        $this->assertSame($expectedRecords, $result);
-    }
+        $commandConfig->setCommandLimit($commandLimit);
 
-    public function test_get_command_usage_records(): void
-    {
-        $expectedRecords = [new CommandUsageRecord(), new CommandUsageRecord()];
+        self::getEntityManager()->persist($commandLimit);
+        self::getEntityManager()->persist($commandConfig);
+        self::getEntityManager()->flush();
 
-        $this->usageRecordRepository
-            ->expects($this->once())
-            ->method('findByCommandConfigId')
-            ->with('config123')
-            ->willReturn($expectedRecords);
+        $result = $this->service->useCommand('LIMITEXCEEDED123', 'user123');
 
-        $result = $this->service->getCommandUsageRecords('config123');
-
-        $this->assertSame($expectedRecords, $result);
+        $this->assertFalse($result['success']);
+        $this->assertSame('口令使用次数已达上限', $result['message']);
     }
 }

@@ -3,6 +3,7 @@
 namespace Tourze\CouponCommandBundle\Service;
 
 use Doctrine\ORM\EntityManagerInterface;
+use Symfony\Component\DependencyInjection\Attribute\Autoconfigure;
 use Tourze\CouponCommandBundle\Entity\CommandConfig;
 use Tourze\CouponCommandBundle\Entity\CommandLimit;
 use Tourze\CouponCommandBundle\Exception\CommandConfigurationException;
@@ -10,13 +11,15 @@ use Tourze\CouponCommandBundle\Repository\CommandConfigRepository;
 use Tourze\CouponCommandBundle\Repository\CommandLimitRepository;
 use Tourze\CouponCoreBundle\Entity\Coupon;
 
-class CommandManagementService
+#[Autoconfigure(public: true)]
+readonly class CommandManagementService
 {
     public function __construct(
-        private readonly EntityManagerInterface $entityManager,
-        private readonly CommandConfigRepository $commandConfigRepository,
-        private readonly CommandLimitRepository $commandLimitRepository,
-    ) {}
+        private EntityManagerInterface $entityManager,
+        private CommandConfigRepository $commandConfigRepository,
+        private CommandLimitRepository $commandLimitRepository,
+    ) {
+    }
 
     /**
      * 创建口令配置
@@ -44,7 +47,7 @@ class CommandManagementService
     public function updateCommandConfig(string $id, string $command): CommandConfig
     {
         $commandConfig = $this->commandConfigRepository->find($id);
-        if ($commandConfig === null) {
+        if (null === $commandConfig) {
             throw new CommandConfigurationException('口令配置不存在');
         }
 
@@ -67,7 +70,7 @@ class CommandManagementService
     public function deleteCommandConfig(string $id): bool
     {
         $commandConfig = $this->commandConfigRepository->find($id);
-        if ($commandConfig === null) {
+        if (null === $commandConfig) {
             return false;
         }
 
@@ -79,6 +82,9 @@ class CommandManagementService
 
     /**
      * 为口令配置添加限制
+     *
+     * @param array<int, string>|null $allowedUsers
+     * @param array<int, string>|null $allowedUserTags
      */
     public function addCommandLimit(
         string $commandConfigId,
@@ -87,15 +93,15 @@ class CommandManagementService
         ?\DateTimeInterface $startTime = null,
         ?\DateTimeInterface $endTime = null,
         ?array $allowedUsers = null,
-        ?array $allowedUserTags = null
+        ?array $allowedUserTags = null,
     ): CommandLimit {
         $commandConfig = $this->commandConfigRepository->find($commandConfigId);
-        if ($commandConfig === null) {
+        if (null === $commandConfig) {
             throw new CommandConfigurationException('口令配置不存在');
         }
 
         // 检查是否已有限制配置
-        if ($commandConfig->getCommandLimit() !== null) {
+        if (null !== $commandConfig->getCommandLimit()) {
             throw new CommandConfigurationException('该口令已有限制配置');
         }
 
@@ -103,8 +109,8 @@ class CommandManagementService
         $commandLimit->setCommandConfig($commandConfig);
         $commandLimit->setMaxUsagePerUser($maxUsagePerUser);
         $commandLimit->setMaxTotalUsage($maxTotalUsage);
-        $commandLimit->setStartTime($startTime !== null && !$startTime instanceof \DateTimeImmutable ? \DateTimeImmutable::createFromInterface($startTime) : $startTime);
-        $commandLimit->setEndTime($endTime !== null && !$endTime instanceof \DateTimeImmutable ? \DateTimeImmutable::createFromInterface($endTime) : $endTime);
+        $commandLimit->setStartTime(null !== $startTime && !$startTime instanceof \DateTimeImmutable ? \DateTimeImmutable::createFromInterface($startTime) : $startTime);
+        $commandLimit->setEndTime(null !== $endTime && !$endTime instanceof \DateTimeImmutable ? \DateTimeImmutable::createFromInterface($endTime) : $endTime);
         $commandLimit->setAllowedUsers($allowedUsers);
         $commandLimit->setAllowedUserTags($allowedUserTags);
 
@@ -116,6 +122,9 @@ class CommandManagementService
 
     /**
      * 更新口令限制
+     *
+     * @param array<int, string>|null $allowedUsers
+     * @param array<int, string>|null $allowedUserTags
      */
     public function updateCommandLimit(
         string $commandLimitId,
@@ -125,34 +134,22 @@ class CommandManagementService
         ?\DateTimeInterface $endTime = null,
         ?array $allowedUsers = null,
         ?array $allowedUserTags = null,
-        ?bool $isEnabled = null
+        ?bool $isEnabled = null,
     ): CommandLimit {
         $commandLimit = $this->commandLimitRepository->find($commandLimitId);
-        if ($commandLimit === null) {
+        if (null === $commandLimit) {
             throw new CommandConfigurationException('限制配置不存在');
         }
 
-        if ($maxUsagePerUser !== null) {
-            $commandLimit->setMaxUsagePerUser($maxUsagePerUser);
-        }
-        if ($maxTotalUsage !== null) {
-            $commandLimit->setMaxTotalUsage($maxTotalUsage);
-        }
-        if ($startTime !== null) {
-            $commandLimit->setStartTime(!$startTime instanceof \DateTimeImmutable ? \DateTimeImmutable::createFromInterface($startTime) : $startTime);
-        }
-        if ($endTime !== null) {
-            $commandLimit->setEndTime(!$endTime instanceof \DateTimeImmutable ? \DateTimeImmutable::createFromInterface($endTime) : $endTime);
-        }
-        if ($allowedUsers !== null) {
-            $commandLimit->setAllowedUsers($allowedUsers);
-        }
-        if ($allowedUserTags !== null) {
-            $commandLimit->setAllowedUserTags($allowedUserTags);
-        }
-        if ($isEnabled !== null) {
-            $commandLimit->setIsEnabled($isEnabled);
-        }
+        $this->updateCommandLimitProperties($commandLimit, [
+            'maxUsagePerUser' => $maxUsagePerUser,
+            'maxTotalUsage' => $maxTotalUsage,
+            'startTime' => $startTime,
+            'endTime' => $endTime,
+            'allowedUsers' => $allowedUsers,
+            'allowedUserTags' => $allowedUserTags,
+            'isEnabled' => $isEnabled,
+        ]);
 
         $this->entityManager->persist($commandLimit);
         $this->entityManager->flush();
@@ -161,12 +158,125 @@ class CommandManagementService
     }
 
     /**
+     * 更新命令限制属性
+     *
+     * @param array<string, mixed> $properties
+     */
+    private function updateCommandLimitProperties(CommandLimit $commandLimit, array $properties): void
+    {
+        $this->updateIntProperty($commandLimit, $properties, 'maxUsagePerUser', 'setMaxUsagePerUser');
+        $this->updateIntProperty($commandLimit, $properties, 'maxTotalUsage', 'setMaxTotalUsage');
+        $this->updateDateTimeProperty($commandLimit, $properties, 'startTime');
+        $this->updateDateTimeProperty($commandLimit, $properties, 'endTime');
+        $this->updateArrayProperty($commandLimit, $properties, 'allowedUsers', 'setAllowedUsers');
+        $this->updateArrayProperty($commandLimit, $properties, 'allowedUserTags', 'setAllowedUserTags');
+        $this->updateBoolProperty($commandLimit, $properties, 'isEnabled', 'setIsEnabled');
+    }
+
+    /**
+     * @param array<string, mixed> $properties
+     */
+    private function updateIntProperty(CommandLimit $commandLimit, array $properties, string $key, string $setter): void
+    {
+        if (!isset($properties[$key]) || !is_int($properties[$key])) {
+            return;
+        }
+
+        match ($setter) {
+            'setMaxUsagePerUser' => $commandLimit->setMaxUsagePerUser($properties[$key]),
+            'setMaxTotalUsage' => $commandLimit->setMaxTotalUsage($properties[$key]),
+            default => null,
+        };
+    }
+
+    /**
+     * @param array<string, mixed> $properties
+     */
+    private function updateDateTimeProperty(CommandLimit $commandLimit, array $properties, string $key): void
+    {
+        if (isset($properties[$key])) {
+            $value = $properties[$key];
+            if ($value instanceof \DateTimeInterface) {
+                if ('startTime' === $key) {
+                    $this->setStartTime($commandLimit, $value);
+                } elseif ('endTime' === $key) {
+                    $this->setEndTime($commandLimit, $value);
+                }
+            }
+        }
+    }
+
+    /**
+     * @param array<string, mixed> $properties
+     */
+    private function updateArrayProperty(CommandLimit $commandLimit, array $properties, string $key, string $setter): void
+    {
+        if (!isset($properties[$key]) || !is_array($properties[$key])) {
+            return;
+        }
+
+        $stringArray = $this->ensureStringArray($properties[$key]);
+        if (null === $stringArray) {
+            return;
+        }
+
+        match ($setter) {
+            'setAllowedUsers' => $commandLimit->setAllowedUsers($stringArray),
+            'setAllowedUserTags' => $commandLimit->setAllowedUserTags($stringArray),
+            default => null,
+        };
+    }
+
+    /**
+     * @param array<string, mixed> $properties
+     */
+    private function updateBoolProperty(CommandLimit $commandLimit, array $properties, string $key, string $setter): void
+    {
+        if (isset($properties[$key]) && is_bool($properties[$key]) && 'setIsEnabled' === $setter) {
+            $commandLimit->setIsEnabled($properties[$key]);
+        }
+    }
+
+    /**
+     * @param array<mixed, mixed> $array
+     * @return array<int, string>|null
+     */
+    private function ensureStringArray(array $array): ?array
+    {
+        $result = [];
+        foreach ($array as $key => $value) {
+            if (!is_int($key) || !is_string($value)) {
+                return null;
+            }
+            $result[$key] = $value;
+        }
+
+        return $result;
+    }
+
+    private function setStartTime(CommandLimit $commandLimit, \DateTimeInterface $startTime): void
+    {
+        $immutableStartTime = !$startTime instanceof \DateTimeImmutable
+            ? \DateTimeImmutable::createFromInterface($startTime)
+            : $startTime;
+        $commandLimit->setStartTime($immutableStartTime);
+    }
+
+    private function setEndTime(CommandLimit $commandLimit, \DateTimeInterface $endTime): void
+    {
+        $immutableEndTime = !$endTime instanceof \DateTimeImmutable
+            ? \DateTimeImmutable::createFromInterface($endTime)
+            : $endTime;
+        $commandLimit->setEndTime($immutableEndTime);
+    }
+
+    /**
      * 删除口令限制
      */
     public function deleteCommandLimit(string $commandLimitId): bool
     {
         $commandLimit = $this->commandLimitRepository->find($commandLimitId);
-        if ($commandLimit === null) {
+        if (null === $commandLimit) {
             return false;
         }
 
@@ -178,11 +288,13 @@ class CommandManagementService
 
     /**
      * 获取口令配置详情
+     *
+     * @return array<string, mixed>|null
      */
     public function getCommandConfigDetail(string $id): ?array
     {
         $commandConfig = $this->commandConfigRepository->find($id);
-        if ($commandConfig === null) {
+        if (null === $commandConfig) {
             return null;
         }
 
@@ -196,6 +308,8 @@ class CommandManagementService
 
     /**
      * 获取所有口令配置列表
+     *
+     * @return array<int, array<string, mixed>>
      */
     public function getCommandConfigList(): array
     {
@@ -203,7 +317,11 @@ class CommandManagementService
         $result = [];
 
         foreach ($configs as $config) {
-            $usageStats = $this->commandConfigRepository->getUsageStats($config->getId());
+            $configId = $config->getId();
+            if (null === $configId) {
+                continue;
+            }
+            $usageStats = $this->commandConfigRepository->getUsageStats((string) $configId);
             $result[] = [
                 'config' => $config->retrieveApiArray(),
                 'stats' => $usageStats,
@@ -219,7 +337,7 @@ class CommandManagementService
     public function toggleCommandLimitStatus(string $commandLimitId): CommandLimit
     {
         $commandLimit = $this->commandLimitRepository->find($commandLimitId);
-        if ($commandLimit === null) {
+        if (null === $commandLimit) {
             throw new CommandConfigurationException('限制配置不存在');
         }
 

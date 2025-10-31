@@ -2,19 +2,28 @@
 
 namespace Tourze\CouponCommandBundle;
 
+use Doctrine\Bundle\DoctrineBundle\DoctrineBundle;
 use Symfony\Component\HttpKernel\Bundle\Bundle;
 use Tourze\BundleDependency\BundleDependencyInterface;
+use Tourze\CouponCoreBundle\CouponCoreBundle;
+use Tourze\DoctrineIndexedBundle\DoctrineIndexedBundle;
+use Tourze\DoctrineIpBundle\DoctrineIpBundle;
+use Tourze\DoctrineSnowflakeBundle\DoctrineSnowflakeBundle;
+use Tourze\DoctrineTimestampBundle\DoctrineTimestampBundle;
+use Tourze\DoctrineUserBundle\DoctrineUserBundle;
 
 class CouponCommandBundle extends Bundle implements BundleDependencyInterface
 {
     public static function getBundleDependencies(): array
     {
         return [
-            \Tourze\DoctrineIndexedBundle\DoctrineIndexedBundle::class => ['all' => true],
-            \Tourze\DoctrineTimestampBundle\DoctrineTimestampBundle::class => ['all' => true],
-            \Tourze\DoctrineIpBundle\DoctrineIpBundle::class => ['all' => true],
-            \Tourze\DoctrineSnowflakeBundle\DoctrineSnowflakeBundle::class => ['all' => true],
-            \Tourze\DoctrineUserBundle\DoctrineUserBundle::class => ['all' => true],
+            DoctrineBundle::class => ['all' => true],
+            DoctrineIndexedBundle::class => ['all' => true],
+            DoctrineTimestampBundle::class => ['all' => true],
+            DoctrineIpBundle::class => ['all' => true],
+            DoctrineSnowflakeBundle::class => ['all' => true],
+            DoctrineUserBundle::class => ['all' => true],
+            CouponCoreBundle::class => ['all' => true],
         ];
     }
 }

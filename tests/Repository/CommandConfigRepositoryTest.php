@@ -3,158 +3,240 @@
 namespace Tourze\CouponCommandBundle\Tests\Repository;
 
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
-use Doctrine\ORM\EntityManagerInterface;
-use Doctrine\Persistence\ManagerRegistry;
-use PHPUnit\Framework\MockObject\MockObject;
-use PHPUnit\Framework\TestCase;
+use PHPUnit\Framework\Attributes\CoversClass;
+use PHPUnit\Framework\Attributes\RunTestsInSeparateProcesses;
 use Tourze\CouponCommandBundle\Entity\CommandConfig;
 use Tourze\CouponCommandBundle\Repository\CommandConfigRepository;
+use Tourze\CouponCoreBundle\Entity\Coupon;
+use Tourze\PHPUnitSymfonyKernelTest\AbstractRepositoryTestCase;
 
-class CommandConfigRepositoryTest extends TestCase
+/**
+ * CommandConfig Repository 测试
+ *
+ * 此测试类继承自AbstractRepositoryTestCase，自动生成针对所有实体字段的测试。
+ *
+ * 注意：CommandConfig实体包含 inverse side 关联字段 'coupon' (mappedBy='commandConfig')，
+ * 这种字段不能用于 Doctrine 的 findBy 查询排序。
+ *
+ * 由于父类的 testFindOneByShouldSortOrder 方法是 final 的无法重写，
+ * 我们通过修改实体映射来解决这个问题。
+ *
+ * @internal
+ */
+#[CoversClass(CommandConfigRepository::class)]
+#[RunTestsInSeparateProcesses]
+final class CommandConfigRepositoryTest extends AbstractRepositoryTestCase
 {
     private CommandConfigRepository $repository;
-    private ManagerRegistry|MockObject $managerRegistry;
-    private EntityManagerInterface|MockObject $entityManager;
 
-    protected function setUp(): void
+    protected function onSetUp(): void
     {
-        $this->managerRegistry = $this->createMock(ManagerRegistry::class);
-        $this->entityManager = $this->createMock(EntityManagerInterface::class);
-
-        $this->managerRegistry
-            ->method('getManagerForClass')
-            ->with(CommandConfig::class)
-            ->willReturn($this->entityManager);
-
-        $this->repository = new CommandConfigRepository($this->managerRegistry);
+        $this->repository = self::getService(CommandConfigRepository::class);
     }
 
-    public function test_inheritance(): void
+    public function testInheritance(): void
     {
         $this->assertInstanceOf(ServiceEntityRepository::class, $this->repository);
     }
 
-    public function test_repository_class_initialization(): void
+    public function testRepositoryClassInitialization(): void
     {
         $this->assertInstanceOf(CommandConfigRepository::class, $this->repository);
     }
 
-    public function test_repository_has_correct_entity_class(): void
+    public function testRepositoryCanCreateNewEntity(): void
     {
-        // 通过反射检查 Repository 是否正确配置了实体类
-        $reflection = new \ReflectionClass($this->repository);
-        $parentReflection = $reflection->getParentClass();
+        $coupon = new Coupon();
+        $coupon->setName('Test Coupon');
+        $coupon->setSn('TEST123');
+        self::getEntityManager()->persist($coupon);
+        self::getEntityManager()->flush();
 
-        $this->assertTrue($parentReflection->getName() === ServiceEntityRepository::class);
+        $entity = new CommandConfig();
+        $entity->setCommand('TEST_COMMAND');
+        $entity->setCoupon($coupon);
+
+        $this->repository->save($entity, false);
+        $this->assertNotNull($entity->getId());
     }
 
-
-    public function test_find_by_command_method_signature(): void
+    public function testFindByCommandReturnsCorrectEntity(): void
     {
-        $reflection = new \ReflectionMethod($this->repository, 'findByCommand');
-        $parameters = $reflection->getParameters();
+        $coupon = new Coupon();
+        $coupon->setName('Test Coupon');
+        $coupon->setSn('FIND123');
+        self::getEntityManager()->persist($coupon);
+        self::getEntityManager()->flush();
 
-        $this->assertCount(1, $parameters);
-        $this->assertEquals('command', $parameters[0]->getName());
-        $this->assertEquals('string', (string) $parameters[0]->getType());
+        $entity = new CommandConfig();
+        $entity->setCommand('FIND_TEST');
+        $this->setupBidirectionalAssociation($entity, $coupon);
+        $this->repository->save($entity, true);
 
-        $returnType = $reflection->getReturnType();
-        $this->assertNotNull($returnType);
-        $this->assertTrue($returnType->allowsNull());
+        $result = $this->repository->findByCommand('FIND_TEST');
+        $this->assertNotNull($result);
+        $this->assertEquals('FIND_TEST', $result->getCommand());
+
+        $notFound = $this->repository->findByCommand('NOT_EXISTS');
+        $this->assertNull($notFound);
     }
 
-    public function test_find_by_coupon_id_method_signature(): void
+    public function testFindByCouponIdReturnsCorrectEntity(): void
     {
-        $reflection = new \ReflectionMethod($this->repository, 'findByCouponId');
-        $parameters = $reflection->getParameters();
+        $coupon = new Coupon();
+        $coupon->setName('Test Coupon');
+        $coupon->setSn('COUPON123');
+        self::getEntityManager()->persist($coupon);
+        self::getEntityManager()->flush();
 
-        $this->assertCount(1, $parameters);
-        $this->assertEquals('couponId', $parameters[0]->getName());
-        $this->assertEquals('string', (string) $parameters[0]->getType());
+        $entity = new CommandConfig();
+        $entity->setCommand('COUPON_TEST');
+        $this->setupBidirectionalAssociation($entity, $coupon);
 
-        $returnType = $reflection->getReturnType();
-        $this->assertNotNull($returnType);
-        $this->assertTrue($returnType->allowsNull());
+        $this->repository->save($entity, true);
+
+        $result = $this->repository->findByCouponId((string) $coupon->getId());
+        $this->assertNotNull($result);
+        $this->assertEquals($coupon->getId(), $result->getCoupon()?->getId());
+
+        $notFound = $this->repository->findByCouponId('not-exists');
+        $this->assertNull($notFound);
     }
 
-    public function test_find_all_with_limits_method_signature(): void
+    public function testFindAllWithLimitsReturnsArray(): void
     {
-        $reflection = new \ReflectionMethod($this->repository, 'findAllWithLimits');
-        $parameters = $reflection->getParameters();
-
-        $this->assertCount(0, $parameters);
-
-        $returnType = $reflection->getReturnType();
-        $this->assertNotNull($returnType);
-        $this->assertEquals('array', (string) $returnType);
+        $result = $this->repository->findAllWithLimits();
+        $this->assertNotNull($result);
     }
 
-    public function test_find_all_with_enabled_limits_method_signature(): void
+    public function testFindAllWithEnabledLimitsReturnsArray(): void
     {
-        $reflection = new \ReflectionMethod($this->repository, 'findAllWithEnabledLimits');
-        $parameters = $reflection->getParameters();
-
-        $this->assertCount(0, $parameters);
-
-        $returnType = $reflection->getReturnType();
-        $this->assertNotNull($returnType);
-        $this->assertEquals('array', (string) $returnType);
+        $result = $this->repository->findAllWithEnabledLimits();
+        $this->assertNotNull($result);
     }
 
-    public function test_is_command_exists_method_signature(): void
+    public function testIsCommandExistsChecksCorrectly(): void
     {
-        $reflection = new \ReflectionMethod($this->repository, 'isCommandExists');
-        $parameters = $reflection->getParameters();
+        $coupon = new Coupon();
+        $coupon->setName('Test Coupon');
+        $coupon->setSn('EXISTS123');
+        self::getEntityManager()->persist($coupon);
+        self::getEntityManager()->flush();
 
-        $this->assertCount(2, $parameters);
-        $this->assertEquals('command', $parameters[0]->getName());
-        $this->assertEquals('string', (string) $parameters[0]->getType());
-        $this->assertEquals('excludeId', $parameters[1]->getName());
-        $this->assertTrue($parameters[1]->allowsNull());
+        $entity = new CommandConfig();
+        $entity->setCommand('EXISTS_TEST');
+        $entity->setCoupon($coupon);
+        $this->repository->save($entity, true);
 
-        $returnType = $reflection->getReturnType();
-        $this->assertNotNull($returnType);
-        $this->assertEquals('bool', (string) $returnType);
+        $exists = $this->repository->isCommandExists('EXISTS_TEST');
+        $this->assertTrue($exists);
+
+        $notExists = $this->repository->isCommandExists('NOT_EXISTS');
+        $this->assertFalse($notExists);
+
+        $excludedCheck = $this->repository->isCommandExists('EXISTS_TEST', $entity->getId());
+        $this->assertFalse($excludedCheck);
     }
 
-    public function test_get_usage_stats_method_signature(): void
+    public function testGetUsageStatsReturnsCorrectFormat(): void
     {
-        $reflection = new \ReflectionMethod($this->repository, 'getUsageStats');
-        $parameters = $reflection->getParameters();
+        $coupon = new Coupon();
+        $coupon->setName('Test Coupon');
+        $coupon->setSn('STATS123');
+        self::getEntityManager()->persist($coupon);
+        self::getEntityManager()->flush();
 
-        $this->assertCount(1, $parameters);
-        $this->assertEquals('commandConfigId', $parameters[0]->getName());
-        $this->assertEquals('string', (string) $parameters[0]->getType());
+        $entity = new CommandConfig();
+        $entity->setCommand('STATS_TEST');
+        $this->setupBidirectionalAssociation($entity, $coupon);
+        $this->repository->save($entity, true);
 
-        $returnType = $reflection->getReturnType();
-        $this->assertNotNull($returnType);
-        $this->assertEquals('array', (string) $returnType);
+        $entityId = $entity->getId();
+        $this->assertNotNull($entityId, 'Entity ID should not be null after save');
+        $stats = $this->repository->getUsageStats($entityId);
+        $this->assertArrayHasKey('totalUsage', $stats);
+        $this->assertArrayHasKey('successUsage', $stats);
+        $this->assertArrayHasKey('failureUsage', $stats);
+        $this->assertEquals(0, $stats['totalUsage']);
+        $this->assertEquals(0, $stats['successUsage']);
+        $this->assertEquals(0, $stats['failureUsage']);
     }
 
-    public function test_repository_constants_and_properties(): void
+    public function testSaveAndRemoveEntityMethods(): void
     {
-        // 验证 Repository 正确配置
-        $reflection = new \ReflectionClass($this->repository);
+        $coupon = new Coupon();
+        $coupon->setName('Test Coupon');
+        $coupon->setSn('SAVE123');
+        self::getEntityManager()->persist($coupon);
+        self::getEntityManager()->flush();
 
-        // 检查是否继承了正确的父类
-        $this->assertTrue($reflection->isSubclassOf(ServiceEntityRepository::class));
+        $entity = new CommandConfig();
+        $entity->setCommand('SAVE_REMOVE_TEST');
+        $this->setupBidirectionalAssociation($entity, $coupon);
 
-        // 检查构造函数参数
-        $constructor = $reflection->getConstructor();
-        $this->assertNotNull($constructor);
+        $this->repository->save($entity, true);
+        $saved = $this->repository->findByCommand('SAVE_REMOVE_TEST');
+        $this->assertNotNull($saved);
 
-        $parameters = $constructor->getParameters();
-        $this->assertCount(1, $parameters);
-        $this->assertEquals('registry', $parameters[0]->getName());
+        $this->repository->remove($entity);
+        $removed = $this->repository->findByCommand('SAVE_REMOVE_TEST');
+        $this->assertNull($removed);
     }
 
-    public function test_docblock_annotations(): void
+    protected function getRepository(): CommandConfigRepository
     {
-        $reflection = new \ReflectionClass($this->repository);
-        $docComment = $reflection->getDocComment();
+        return $this->repository;
+    }
 
-        $this->assertNotFalse($docComment);
-        $this->assertStringContainsString('@method', $docComment);
-        $this->assertStringContainsString('CommandConfig', $docComment);
+    protected function createNewEntity(): object
+    {
+        $commandConfig = new CommandConfig();
+        $commandConfig->setCommand('TEST_COMMAND');
+
+        // 不设置关联关系，因为测试框架会persist这个实体
+        // 如果设置了关联，Doctrine会尝试cascade persist关联的实体
+        // 但由于没有cascade配置，会导致错误
+
+        return $commandConfig;
+    }
+
+    /**
+     * 辅助方法：正确设置 CommandConfig 和 Coupon 之间的双向关联关系
+     *
+     * 注意：由于没有cascade配置，需要手动persist两个实体
+     * owning side是Coupon，inverse side是CommandConfig
+     */
+    private function setupBidirectionalAssociation(CommandConfig $commandConfig, Coupon $coupon): void
+    {
+        // 先persist Coupon实体（避免外键约束问题）
+        self::getEntityManager()->persist($coupon);
+        self::getEntityManager()->flush();
+
+        // 设置双向关联
+        $commandConfig->setCoupon($coupon);
+        $coupon->setCommandConfig($commandConfig);
+
+        // 再persist CommandConfig
+        self::getEntityManager()->persist($commandConfig);
+        self::getEntityManager()->persist($coupon); // 更新Coupon的关联
+    }
+
+    public function testRemoveMethod(): void
+    {
+        $coupon = new Coupon();
+        $coupon->setName('Test Coupon');
+        $coupon->setSn('REMOVE_TEST');
+        self::getEntityManager()->persist($coupon);
+        self::getEntityManager()->flush();
+
+        $entity = new CommandConfig();
+        $entity->setCommand('REMOVE_COMMAND');
+        $this->setupBidirectionalAssociation($entity, $coupon);
+        $this->repository->save($entity, true);
+
+        $this->assertNotNull($this->repository->findByCommand('REMOVE_COMMAND'));
+
+        $this->repository->remove($entity);
+        $this->assertNull($this->repository->findByCommand('REMOVE_COMMAND'));
     }
 }

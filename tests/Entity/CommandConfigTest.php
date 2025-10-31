@@ -2,48 +2,72 @@
 
 namespace Tourze\CouponCommandBundle\Tests\Entity;
 
-use PHPUnit\Framework\TestCase;
+use PHPUnit\Framework\Attributes\CoversClass;
 use Tourze\CouponCommandBundle\Entity\CommandConfig;
 use Tourze\CouponCommandBundle\Entity\CommandLimit;
 use Tourze\CouponCommandBundle\Entity\CommandUsageRecord;
+use Tourze\CouponCoreBundle\Entity\Coupon;
+use Tourze\PHPUnitDoctrineEntity\AbstractEntityTestCase;
 
-class CommandConfigTest extends TestCase
+/**
+ * @internal
+ */
+#[CoversClass(CommandConfig::class)]
+final class CommandConfigTest extends AbstractEntityTestCase
 {
-    private CommandConfig $commandConfig;
-
-    protected function setUp(): void
+    protected function createEntity(): object
     {
-        $this->commandConfig = new CommandConfig();
+        return new CommandConfig();
     }
 
-    public function test_command_config_creation(): void
+    /** @return iterable<array{0: string, 1: mixed}> */
+    public static function propertiesProvider(): iterable
     {
-        $this->assertInstanceOf(CommandConfig::class, $this->commandConfig);
-        $this->assertNull($this->commandConfig->getId());
-        $this->assertNull($this->commandConfig->getCommand());
-        $this->assertCount(0, $this->commandConfig->getUsageRecords());
+        yield 'command' => ['command', 'TEST_COMMAND_2024'];
+        yield 'coupon' => ['coupon', new Coupon()];
+        yield 'commandLimit' => ['commandLimit', new CommandLimit()];
+        yield 'createTime' => ['createTime', new \DateTimeImmutable('2024-01-01 10:00:00')];
+        yield 'updateTime' => ['updateTime', new \DateTimeImmutable('2024-01-01 11:00:00')];
+        yield 'createdBy' => ['createdBy', 'admin_user'];
+        yield 'updatedBy' => ['updatedBy', 'editor_user'];
+        yield 'createdFromIp' => ['createdFromIp', '192.168.1.1'];
+        yield 'updatedFromIp' => ['updatedFromIp', '192.168.1.2'];
     }
 
-    public function test_set_and_get_command(): void
+    public function testCommandConfigCreation(): void
+    {
+        $commandConfig = $this->createEntity();
+        $this->assertInstanceOf(CommandConfig::class, $commandConfig);
+        $this->assertInstanceOf(CommandConfig::class, $commandConfig);
+        $this->assertNull($commandConfig->getId());
+        $this->assertNull($commandConfig->getCommand());
+        $this->assertCount(0, $commandConfig->getUsageRecords());
+    }
+
+    public function testSetAndGetCommand(): void
     {
         $command = 'TEST_COMMAND_2024';
-        $this->commandConfig->setCommand($command);
+        $commandConfig = $this->createEntity();
+        $this->assertInstanceOf(CommandConfig::class, $commandConfig);
+        $commandConfig->setCommand($command);
 
-        $this->assertEquals($command, $this->commandConfig->getCommand());
+        $this->assertEquals($command, $commandConfig->getCommand());
     }
 
-    public function test_command_limit_relationship(): void
+    public function testCommandLimitRelationship(): void
     {
         $commandLimit = new CommandLimit();
         $commandLimit->setMaxUsagePerUser(10);
 
-        $this->commandConfig->setCommandLimit($commandLimit);
+        $commandConfig = $this->createEntity();
+        $this->assertInstanceOf(CommandConfig::class, $commandConfig);
+        $commandConfig->setCommandLimit($commandLimit);
 
-        $this->assertSame($commandLimit, $this->commandConfig->getCommandLimit());
-        $this->assertSame($this->commandConfig, $commandLimit->getCommandConfig());
+        $this->assertSame($commandLimit, $commandConfig->getCommandLimit());
+        $this->assertSame($commandConfig, $commandLimit->getCommandConfig());
     }
 
-    public function test_usage_records_collection(): void
+    public function testUsageRecordsCollection(): void
     {
         $usageRecord1 = new CommandUsageRecord();
         $usageRecord1->setUserId('user1');
@@ -55,55 +79,64 @@ class CommandConfigTest extends TestCase
         $usageRecord2->setCommandText('TEST_CMD');
         $usageRecord2->setIsSuccess(false);
 
-        // 添加使用记录
-        $this->commandConfig->addUsageRecord($usageRecord1);
-        $this->commandConfig->addUsageRecord($usageRecord2);
+        $commandConfig = $this->createEntity();
+        $this->assertInstanceOf(CommandConfig::class, $commandConfig);
 
-        $this->assertTrue($this->commandConfig->getUsageRecords()->contains($usageRecord1));
-        $this->assertTrue($this->commandConfig->getUsageRecords()->contains($usageRecord2));
-        $this->assertEquals(2, $this->commandConfig->getUsageRecords()->count());
+        // 添加使用记录
+        $commandConfig->addUsageRecord($usageRecord1);
+        $commandConfig->addUsageRecord($usageRecord2);
+
+        $this->assertTrue($commandConfig->getUsageRecords()->contains($usageRecord1));
+        $this->assertTrue($commandConfig->getUsageRecords()->contains($usageRecord2));
+        $this->assertEquals(2, $commandConfig->getUsageRecords()->count());
 
         // 测试关联关系
-        $this->assertSame($this->commandConfig, $usageRecord1->getCommandConfig());
-        $this->assertSame($this->commandConfig, $usageRecord2->getCommandConfig());
+        $this->assertSame($commandConfig, $usageRecord1->getCommandConfig());
+        $this->assertSame($commandConfig, $usageRecord2->getCommandConfig());
 
         // 移除使用记录
-        $this->commandConfig->removeUsageRecord($usageRecord1);
-        $this->assertFalse($this->commandConfig->getUsageRecords()->contains($usageRecord1));
-        $this->assertEquals(1, $this->commandConfig->getUsageRecords()->count());
+        $commandConfig->removeUsageRecord($usageRecord1);
+        $this->assertFalse($commandConfig->getUsageRecords()->contains($usageRecord1));
+        $this->assertEquals(1, $commandConfig->getUsageRecords()->count());
     }
 
-    public function test_duplicate_usage_record_not_added(): void
+    public function testDuplicateUsageRecordNotAdded(): void
     {
         $usageRecord = new CommandUsageRecord();
         $usageRecord->setUserId('user1');
 
-        $this->commandConfig->addUsageRecord($usageRecord);
-        $this->commandConfig->addUsageRecord($usageRecord); // 重复添加
+        $commandConfig = $this->createEntity();
+        $this->assertInstanceOf(CommandConfig::class, $commandConfig);
+        $commandConfig->addUsageRecord($usageRecord);
+        $commandConfig->addUsageRecord($usageRecord); // 重复添加
 
-        $this->assertEquals(1, $this->commandConfig->getUsageRecords()->count());
+        $this->assertEquals(1, $commandConfig->getUsageRecords()->count());
     }
 
-    public function test_timestamp_methods(): void
+    public function testTimestampMethods(): void
     {
         $createTime = new \DateTimeImmutable('2024-01-01 10:00:00');
         $updateTime = new \DateTimeImmutable('2024-01-01 11:00:00');
 
-        $this->commandConfig->setCreateTime($createTime);
-        $this->commandConfig->setUpdateTime($updateTime);
+        $commandConfig = $this->createEntity();
+        $this->assertInstanceOf(CommandConfig::class, $commandConfig);
+        $commandConfig->setCreateTime($createTime);
+        $commandConfig->setUpdateTime($updateTime);
 
-        $this->assertEquals($createTime, $this->commandConfig->getCreateTime());
-        $this->assertEquals($updateTime, $this->commandConfig->getUpdateTime());
+        $this->assertEquals($createTime, $commandConfig->getCreateTime());
+        $this->assertEquals($updateTime, $commandConfig->getUpdateTime());
     }
 
-    public function test_retrieve_api_array(): void
+    public function testRetrieveApiArray(): void
     {
-        $this->commandConfig->setCommand('API_TEST');
+        $commandConfig = $this->createEntity();
+        $this->assertInstanceOf(CommandConfig::class, $commandConfig);
+        $commandConfig->setCommand('API_TEST');
 
         $createTime = new \DateTimeImmutable('2024-01-01 10:00:00');
-        $this->commandConfig->setCreateTime($createTime);
+        $commandConfig->setCreateTime($createTime);
 
-        $apiArray = $this->commandConfig->retrieveApiArray();
+        $apiArray = $commandConfig->retrieveApiArray();
         $this->assertEquals('API_TEST', $apiArray['command']);
         $this->assertEquals('2024-01-01 10:00:00', $apiArray['createTime']);
         $this->assertEquals(0, $apiArray['usageCount']);
@@ -112,21 +145,23 @@ class CommandConfigTest extends TestCase
         $this->assertArrayHasKey('commandLimit', $apiArray);
     }
 
-    public function test_user_tracking_fields(): void
+    public function testUserTrackingFields(): void
     {
         $createdBy = 'admin_user';
         $updatedBy = 'editor_user';
         $createdFromIp = '192.168.1.1';
         $updatedFromIp = '192.168.1.2';
 
-        $this->commandConfig->setCreatedBy($createdBy);
-        $this->commandConfig->setUpdatedBy($updatedBy);
-        $this->commandConfig->setCreatedFromIp($createdFromIp);
-        $this->commandConfig->setUpdatedFromIp($updatedFromIp);
+        $commandConfig = $this->createEntity();
+        $this->assertInstanceOf(CommandConfig::class, $commandConfig);
+        $commandConfig->setCreatedBy($createdBy);
+        $commandConfig->setUpdatedBy($updatedBy);
+        $commandConfig->setCreatedFromIp($createdFromIp);
+        $commandConfig->setUpdatedFromIp($updatedFromIp);
 
-        $this->assertEquals($createdBy, $this->commandConfig->getCreatedBy());
-        $this->assertEquals($updatedBy, $this->commandConfig->getUpdatedBy());
-        $this->assertEquals($createdFromIp, $this->commandConfig->getCreatedFromIp());
-        $this->assertEquals($updatedFromIp, $this->commandConfig->getUpdatedFromIp());
+        $this->assertEquals($createdBy, $commandConfig->getCreatedBy());
+        $this->assertEquals($updatedBy, $commandConfig->getUpdatedBy());
+        $this->assertEquals($createdFromIp, $commandConfig->getCreatedFromIp());
+        $this->assertEquals($updatedFromIp, $commandConfig->getUpdatedFromIp());
     }
 }

@@ -2,148 +2,184 @@
 
 namespace Tourze\CouponCommandBundle\Tests\Entity;
 
-use PHPUnit\Framework\TestCase;
+use PHPUnit\Framework\Attributes\CoversClass;
 use Tourze\CouponCommandBundle\Entity\CommandConfig;
 use Tourze\CouponCommandBundle\Entity\CommandUsageRecord;
+use Tourze\PHPUnitDoctrineEntity\AbstractEntityTestCase;
 
-class CommandUsageRecordTest extends TestCase
+/**
+ * @internal
+ */
+#[CoversClass(CommandUsageRecord::class)]
+final class CommandUsageRecordTest extends AbstractEntityTestCase
 {
-    private CommandUsageRecord $usageRecord;
-
-    protected function setUp(): void
+    protected function createEntity(): object
     {
-        $this->usageRecord = new CommandUsageRecord();
+        return new CommandUsageRecord();
     }
 
-    public function test_usage_record_creation(): void
+    /** @return iterable<array{0: string, 1: mixed}> */
+    public static function propertiesProvider(): iterable
     {
-        $this->assertInstanceOf(CommandUsageRecord::class, $this->usageRecord);
-        $this->assertNull($this->usageRecord->getId());
-        $this->assertNull($this->usageRecord->getUserId());
-        $this->assertNull($this->usageRecord->getCommandText());
-        $this->assertNull($this->usageRecord->getCouponId());
-        $this->assertFalse($this->usageRecord->isSuccess());
-        $this->assertNull($this->usageRecord->getFailureReason());
-        $this->assertNull($this->usageRecord->getExtraData());
+        yield 'userId' => ['userId', 'test_user_123'];
+        yield 'commandText' => ['commandText', 'TEST_COMMAND_2024'];
+        yield 'couponId' => ['couponId', 'coupon_456'];
+        yield 'success' => ['success', true];
+        yield 'failureReason' => ['failureReason', '口令已过期'];
+        yield 'extraData' => ['extraData', ['test' => 'data']];
+        yield 'commandConfig' => ['commandConfig', new CommandConfig()];
+        yield 'createTime' => ['createTime', new \DateTimeImmutable('2024-01-15 14:30:00')];
+        yield 'createdBy' => ['createdBy', 'admin_user'];
+        yield 'createdFromIp' => ['createdFromIp', '192.168.1.1'];
     }
 
-    public function test_set_and_get_usage_fields(): void
+    public function testUsageRecordCreation(): void
+    {
+        $usageRecord = $this->createEntity();
+        $this->assertInstanceOf(CommandUsageRecord::class, $usageRecord);
+        $this->assertInstanceOf(CommandUsageRecord::class, $usageRecord);
+        $this->assertNull($usageRecord->getId());
+        $this->assertNull($usageRecord->getUserId());
+        $this->assertNull($usageRecord->getCommandText());
+        $this->assertNull($usageRecord->getCouponId());
+        $this->assertFalse($usageRecord->isSuccess());
+        $this->assertNull($usageRecord->getFailureReason());
+        $this->assertNull($usageRecord->getExtraData());
+    }
+
+    public function testSetAndGetUsageFields(): void
     {
         $userId = 'test_user_123';
         $commandText = 'TEST_COMMAND_2024';
         $couponId = 'coupon_456';
 
-        $this->usageRecord->setUserId($userId);
-        $this->usageRecord->setCommandText($commandText);
-        $this->usageRecord->setCouponId($couponId);
+        $usageRecord = $this->createEntity();
+        $this->assertInstanceOf(CommandUsageRecord::class, $usageRecord);
+        $usageRecord->setUserId($userId);
+        $usageRecord->setCommandText($commandText);
+        $usageRecord->setCouponId($couponId);
 
-        $this->assertEquals($userId, $this->usageRecord->getUserId());
-        $this->assertEquals($commandText, $this->usageRecord->getCommandText());
-        $this->assertEquals($couponId, $this->usageRecord->getCouponId());
+        $this->assertEquals($userId, $usageRecord->getUserId());
+        $this->assertEquals($commandText, $usageRecord->getCommandText());
+        $this->assertEquals($couponId, $usageRecord->getCouponId());
     }
 
-    public function test_success_failure_status(): void
+    public function testSuccessFailureStatus(): void
     {
+        $usageRecord = $this->createEntity();
+        $this->assertInstanceOf(CommandUsageRecord::class, $usageRecord);
         // 测试默认状态
-        $this->assertFalse($this->usageRecord->isSuccess());
+        $this->assertFalse($usageRecord->isSuccess());
 
         // 测试设置成功状态
-        $this->usageRecord->setIsSuccess(true);
-        $this->assertTrue($this->usageRecord->isSuccess());
+        $usageRecord->setIsSuccess(true);
+        $this->assertTrue($usageRecord->isSuccess());
 
         // 测试设置失败状态
-        $this->usageRecord->setIsSuccess(false);
-        $this->assertFalse($this->usageRecord->isSuccess());
+        $usageRecord->setIsSuccess(false);
+        $this->assertFalse($usageRecord->isSuccess());
     }
 
-    public function test_failure_reason_handling(): void
+    public function testFailureReasonHandling(): void
     {
         $failureReason = '口令已过期';
 
-        $this->usageRecord->setFailureReason($failureReason);
-        $this->assertEquals($failureReason, $this->usageRecord->getFailureReason());
+        $usageRecord = $this->createEntity();
+        $this->assertInstanceOf(CommandUsageRecord::class, $usageRecord);
+        $usageRecord->setFailureReason($failureReason);
+        $this->assertEquals($failureReason, $usageRecord->getFailureReason());
 
         // 测试设置为 null
-        $this->usageRecord->setFailureReason(null);
-        $this->assertNull($this->usageRecord->getFailureReason());
+        $usageRecord->setFailureReason(null);
+        $this->assertNull($usageRecord->getFailureReason());
     }
 
-    public function test_extra_data_handling(): void
+    public function testExtraDataHandling(): void
     {
         $extraData = [
             'ip_address' => '192.168.1.100',
             'user_agent' => 'Mozilla/5.0...',
-            'request_id' => 'req_123456'
+            'request_id' => 'req_123456',
         ];
 
-        $this->usageRecord->setExtraData($extraData);
-        $this->assertEquals($extraData, $this->usageRecord->getExtraData());
+        $usageRecord = $this->createEntity();
+        $this->assertInstanceOf(CommandUsageRecord::class, $usageRecord);
+        $usageRecord->setExtraData($extraData);
+        $this->assertEquals($extraData, $usageRecord->getExtraData());
 
         // 测试空数组
-        $this->usageRecord->setExtraData([]);
-        $this->assertEquals([], $this->usageRecord->getExtraData());
+        $usageRecord->setExtraData([]);
+        $this->assertEquals([], $usageRecord->getExtraData());
 
         // 测试设置为 null
-        $this->usageRecord->setExtraData(null);
-        $this->assertNull($this->usageRecord->getExtraData());
+        $usageRecord->setExtraData(null);
+        $this->assertNull($usageRecord->getExtraData());
     }
 
-    public function test_command_config_relationship(): void
+    public function testCommandConfigRelationship(): void
     {
         $commandConfig = new CommandConfig();
         $commandConfig->setCommand('TEST_RELATIONSHIP');
 
-        $this->usageRecord->setCommandConfig($commandConfig);
+        $usageRecord = $this->createEntity();
+        $this->assertInstanceOf(CommandUsageRecord::class, $usageRecord);
+        $usageRecord->setCommandConfig($commandConfig);
 
-        $this->assertSame($commandConfig, $this->usageRecord->getCommandConfig());
+        $this->assertSame($commandConfig, $usageRecord->getCommandConfig());
 
         // 测试设置为 null
-        $this->usageRecord->setCommandConfig(null);
-        $this->assertNull($this->usageRecord->getCommandConfig());
+        $usageRecord->setCommandConfig(null);
+        $this->assertNull($usageRecord->getCommandConfig());
     }
 
-    public function test_tracking_fields(): void
+    public function testTrackingFields(): void
     {
         $createdBy = 'admin_user';
         $createdFromIp = '10.0.0.1';
 
-        $this->usageRecord->setCreatedBy($createdBy);
-        $this->usageRecord->setCreatedFromIp($createdFromIp);
+        $usageRecord = $this->createEntity();
+        $this->assertInstanceOf(CommandUsageRecord::class, $usageRecord);
+        $usageRecord->setCreatedBy($createdBy);
+        $usageRecord->setCreatedFromIp($createdFromIp);
 
-        $this->assertEquals($createdBy, $this->usageRecord->getCreatedBy());
-        $this->assertEquals($createdFromIp, $this->usageRecord->getCreatedFromIp());
+        $this->assertEquals($createdBy, $usageRecord->getCreatedBy());
+        $this->assertEquals($createdFromIp, $usageRecord->getCreatedFromIp());
     }
 
-    public function test_create_time_handling(): void
+    public function testCreateTimeHandling(): void
     {
         $createTime = new \DateTimeImmutable('2024-01-15 14:30:00');
 
-        $this->usageRecord->setCreateTime($createTime);
-        $this->assertEquals($createTime, $this->usageRecord->getCreateTime());
+        $usageRecord = $this->createEntity();
+        $this->assertInstanceOf(CommandUsageRecord::class, $usageRecord);
+        $usageRecord->setCreateTime($createTime);
+        $this->assertEquals($createTime, $usageRecord->getCreateTime());
 
         // 测试设置为 null
-        $this->usageRecord->setCreateTime(null);
-        $this->assertNull($this->usageRecord->getCreateTime());
+        $usageRecord->setCreateTime(null);
+        $this->assertNull($usageRecord->getCreateTime());
     }
 
-    public function test_retrieve_api_array(): void
+    public function testRetrieveApiArray(): void
     {
         $userId = 'api_test_user';
+        $usageRecord = $this->createEntity();
+        $this->assertInstanceOf(CommandUsageRecord::class, $usageRecord);
         $commandText = 'API_TEST_CMD';
         $couponId = 'api_coupon_123';
         $failureReason = 'API测试失败';
         $extraData = ['test' => 'data'];
         $createTime = new \DateTimeImmutable('2024-01-15 15:45:00');
 
-        $this->usageRecord->setUserId($userId);
-        $this->usageRecord->setCommandText($commandText);
-        $this->usageRecord->setCouponId($couponId);
-        $this->usageRecord->setIsSuccess(false);
-        $this->usageRecord->setFailureReason($failureReason);
-        $this->usageRecord->setExtraData($extraData);
-        $this->usageRecord->setCreateTime($createTime);
+        $usageRecord->setUserId($userId);
+        $usageRecord->setCommandText($commandText);
+        $usageRecord->setCouponId($couponId);
+        $usageRecord->setIsSuccess(false);
+        $usageRecord->setFailureReason($failureReason);
+        $usageRecord->setExtraData($extraData);
+        $usageRecord->setCreateTime($createTime);
 
-        $apiArray = $this->usageRecord->retrieveApiArray();
+        $apiArray = $usageRecord->retrieveApiArray();
         $this->assertEquals($userId, $apiArray['userId']);
         $this->assertEquals($commandText, $apiArray['commandText']);
         $this->assertEquals($couponId, $apiArray['couponId']);
@@ -154,35 +190,39 @@ class CommandUsageRecordTest extends TestCase
         $this->assertArrayHasKey('id', $apiArray);
     }
 
-    public function test_successful_usage_record(): void
+    public function testSuccessfulUsageRecord(): void
     {
         $commandConfig = new CommandConfig();
         $commandConfig->setCommand('SUCCESS_TEST');
 
-        $this->usageRecord->setCommandConfig($commandConfig);
-        $this->usageRecord->setUserId('success_user');
-        $this->usageRecord->setCommandText('SUCCESS_TEST');
-        $this->usageRecord->setCouponId('coupon_success_123');
-        $this->usageRecord->setIsSuccess(true);
+        $usageRecord = $this->createEntity();
+        $this->assertInstanceOf(CommandUsageRecord::class, $usageRecord);
+        $usageRecord->setCommandConfig($commandConfig);
+        $usageRecord->setUserId('success_user');
+        $usageRecord->setCommandText('SUCCESS_TEST');
+        $usageRecord->setCouponId('coupon_success_123');
+        $usageRecord->setIsSuccess(true);
 
-        $this->assertTrue($this->usageRecord->isSuccess());
-        $this->assertNull($this->usageRecord->getFailureReason());
-        $this->assertEquals('coupon_success_123', $this->usageRecord->getCouponId());
+        $this->assertTrue($usageRecord->isSuccess());
+        $this->assertNull($usageRecord->getFailureReason());
+        $this->assertEquals('coupon_success_123', $usageRecord->getCouponId());
     }
 
-    public function test_failed_usage_record(): void
+    public function testFailedUsageRecord(): void
     {
         $commandConfig = new CommandConfig();
         $commandConfig->setCommand('FAILED_TEST');
 
-        $this->usageRecord->setCommandConfig($commandConfig);
-        $this->usageRecord->setUserId('failed_user');
-        $this->usageRecord->setCommandText('FAILED_TEST');
-        $this->usageRecord->setIsSuccess(false);
-        $this->usageRecord->setFailureReason('口令使用次数已达上限');
+        $usageRecord = $this->createEntity();
+        $this->assertInstanceOf(CommandUsageRecord::class, $usageRecord);
+        $usageRecord->setCommandConfig($commandConfig);
+        $usageRecord->setUserId('failed_user');
+        $usageRecord->setCommandText('FAILED_TEST');
+        $usageRecord->setIsSuccess(false);
+        $usageRecord->setFailureReason('口令使用次数已达上限');
 
-        $this->assertFalse($this->usageRecord->isSuccess());
-        $this->assertEquals('口令使用次数已达上限', $this->usageRecord->getFailureReason());
-        $this->assertNull($this->usageRecord->getCouponId());
+        $this->assertFalse($usageRecord->isSuccess());
+        $this->assertEquals('口令使用次数已达上限', $usageRecord->getFailureReason());
+        $this->assertNull($usageRecord->getCouponId());
     }
 }

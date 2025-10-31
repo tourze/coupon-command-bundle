@@ -1,26 +1,68 @@
 # CouponCommandBundle
 
-优惠券口令系统Bundle，提供基于口令的优惠券发放和管理功能。
+[English](README.md) | [中文](README.zh-CN.md)
 
-## 功能特性
+[![Latest Version](https://img.shields.io/packagist/v/tourze/coupon-command-bundle.svg?style=flat-square)](https://packagist.org/packages/tourze/coupon-command-bundle)
+[![PHP Version Require](https://img.shields.io/packagist/php-v/tourze/coupon-command-bundle.svg?style=flat-square)](https://packagist.org/packages/tourze/coupon-command-bundle)
+[![License](https://img.shields.io/packagist/l/tourze/coupon-command-bundle.svg?style=flat-square)](https://packagist.org/packages/tourze/coupon-command-bundle)
+[![Build Status](https://img.shields.io/github/actions/workflow/status/tourze/php-monorepo/test.yml?branch=master&style=flat-square)](https://github.com/tourze/php-monorepo/actions)
+[![Quality Score](https://img.shields.io/scrutinizer/g/tourze/php-monorepo.svg?style=flat-square)](https://scrutinizer-ci.com/g/tourze/php-monorepo)
+[![Code Coverage](https://img.shields.io/scrutinizer/coverage/g/tourze/php-monorepo.svg?style=flat-square)](https://scrutinizer-ci.com/g/tourze/php-monorepo/?branch=master)
+[![Total Downloads](https://img.shields.io/packagist/dt/tourze/coupon-command-bundle.svg?style=flat-square)](https://packagist.org/packages/tourze/coupon-command-bundle)
 
-- **口令管理**：创建、编辑、删除优惠券口令
-- **使用限制**：支持多维度使用限制（时间、次数、用户群体等）
-- **JsonRPC 接口**：标准的 JSON-RPC 2.0 API 接口
-- **管理后台**：基于 EasyAdmin 的完整管理界面
-- **使用记录**：完整的口令使用记录和统计
+A Symfony bundle for coupon command code system that provides 
+command-based coupon distribution and management functionality.
 
-## 安装
+## Table of Contents
 
-### 通过 Composer 安装
+- [Features](#features)
+- [Requirements](#requirements)
+- [Installation](#installation)
+- [Quick Start](#quick-start)
+- [Core Concepts](#core-concepts)
+- [JsonRPC Interface](#jsonrpc-interface)
+- [Admin Interface](#admin-interface)
+- [Architecture](#architecture)
+- [Usage Examples](#usage-examples)
+- [Advanced Usage](#advanced-usage)
+- [Service Configuration](#service-configuration)
+- [Error Handling](#error-handling)
+- [Testing](#testing)
+- [Contributing](#contributing)
+- [Support](#support)
+- [License](#license)
+- [Changelog](#changelog)
+
+## Features
+
+- **Command Management**: Create, edit, and delete coupon command codes
+- **Usage Restrictions**: Multi-dimensional usage restrictions (time, count, 
+user groups, etc.)
+- **JsonRPC Interface**: Standard JSON-RPC 2.0 API endpoints
+- **Admin Interface**: Complete management interface based on EasyAdmin
+- **Usage Records**: Complete command usage tracking and statistics
+- **Flexible Restrictions**: Time windows, usage limits, and user targeting
+- **User Group Targeting**: Allow specific users or user tags to use commands
+
+## Requirements
+
+- PHP 8.1+
+- Symfony 6.4+
+- Doctrine ORM 3.0+
+- tourze/coupon-core-bundle
+- tourze/json-rpc-core
+
+## Installation
+
+### Install via Composer
 
 ```bash
 composer require tourze/coupon-command-bundle
 ```
 
-### 启用 Bundle
+### Enable the Bundle
 
-在 `config/bundles.php` 中添加：
+Add to `config/bundles.php`:
 
 ```php
 return [
@@ -29,49 +71,63 @@ return [
 ];
 ```
 
-### 数据库迁移
+### Database Migration
 
 ```bash
 php bin/console doctrine:migrations:diff
 php bin/console doctrine:migrations:migrate
 ```
 
-## 核心概念
+## Quick Start
 
-### 实体关系
+```php
+use Tourze\CouponCommandBundle\Service\CommandValidationService;
+use Tourze\CouponCommandBundle\Service\CommandManagementService;
 
-- **CommandConfig**：口令配置，关联具体的优惠券
-- **CommandLimit**：口令使用限制配置
-- **CommandUsageRecord**：口令使用记录
+// Validate command
+$validationService = $container->get(CommandValidationService::class);
+$result = $validationService->validateCommand('NEWUSER2024', 'user123');
 
-### 限制类型
-
-1. **时间限制**：设置口令有效时间范围
-2. **次数限制**：总使用次数和用户单次使用次数限制
-3. **用户限制**：指定允许使用口令的用户群体
-4. **状态控制**：启用/禁用口令限制
-
-## JsonRPC 接口
-
-### 验证口令 - ValidateCouponCommand
-
-验证口令有效性，不实际使用口令。
-
-**请求参数：**
-```json
-{
-    "command": "string",     // 口令内容
-    "userId": "string"       // 用户ID（可选）
+if ($result['valid']) {
+    // Command is valid, can be used
+    $useResult = $validationService->useCommand('NEWUSER2024', 'user123');
+    
+    if ($useResult['success']) {
+        echo "Coupon claimed successfully, ID: " . $useResult['couponId'];
+    }
 }
 ```
 
-**响应示例：**
+## Core Concepts
+
+### Restriction Types
+
+1. **Time Restrictions**: Set valid time range for commands
+2. **Count Restrictions**: Total usage count and per-user usage limits
+3. **User Restrictions**: Specify allowed user groups for command usage
+4. **Status Control**: Enable/disable command restrictions
+
+## JsonRPC Interface
+
+### Validate Command - ValidateCouponCommand
+
+Validates command validity without actually using the command.
+
+**Request Parameters:**
+```json
+{
+    "command": "string",     // Command content
+    "userId": "string"       // User ID (optional)
+}
+```
+
+**Response Example:**
 ```json
 {
     "valid": true,
     "couponInfo": {
         "id": "1234567890",
-        "name": "新用户优惠券",
+        "name": "New User Coupon",
         "type": "discount",
         "amount": 100
     },
@@ -82,164 +138,169 @@ php bin/console doctrine:migrations:migrate
 }
 ```
 
-### 使用口令 - UseCouponCommand
+### Use Command - UseCouponCommand
 
-使用口令领取优惠券。
+Use command to claim coupon.
 
-**请求参数：**
+**Request Parameters:**
 ```json
 {
-    "command": "string",     // 口令内容
-    "userId": "string"       // 用户ID（必填）
+    "command": "string",     // Command content
+    "userId": "string"       // User ID (required)
 }
 ```
 
-**响应示例：**
+**Response Example:**
 ```json
 {
     "success": true,
     "couponId": "1234567890",
-    "message": "优惠券领取成功"
+    "message": "Coupon claimed successfully"
 }
 ```
 
-## 管理界面
+## Admin Interface
 
-Bundle 提供完整的 EasyAdmin 管理界面：
+The bundle provides complete EasyAdmin management interface:
 
-1. **口令配置管理** - `CommandConfigCrudController`
-   - 创建、编辑口令
-   - 关联优惠券
-   - 查看使用统计
+1. **Command Configuration Management** - `CommandConfigCrudController`
+    - Create and edit commands
+    - Link to coupons
+    - View usage statistics
 
-2. **限制配置管理** - `CommandLimitCrudController`
-   - 设置使用限制
-   - 时间窗口配置
-   - 用户群体限制
+2. **Restriction Configuration Management** - `CommandLimitCrudController`
+    - Set usage restrictions
+    - Configure time windows
+    - Manage user group restrictions
 
-3. **使用记录查看** - `CommandUsageRecordCrudController`
-   - 查看详细使用记录
-   - 成功/失败统计
-   - 用户使用轨迹
+3. **Usage Record Viewing** - `CommandUsageRecordCrudController`
+    - View detailed usage records
+    - Success/failure statistics
+    - User usage tracking
 
-## 使用示例
+## Architecture
 
-### 基本用法
+### Entity Relationships
+
+- **CommandConfig**: Command configuration, linked to specific coupons
+- **CommandLimit**: Command usage restriction configuration
+- **CommandUsageRecord**: Command usage tracking records
+
+### Service Layer
+
+- **CommandValidationService**: Command validation and execution
+- **CommandManagementService**: Command management and statistics
+
+### Core Features
+
+- **Audit Trails**: All usage is tracked with IP, user, and timestamp 
+information
+- **Flexible Validation**: Time-based, count-based, and user-based 
+restrictions
+- **Admin Interface**: Complete CRUD operations via EasyAdmin controllers
+
+## Usage Examples
+
+### Basic Usage
 
 ```php
-use Tourze\CouponCommandBundle\Service\CommandValidationService;
-use Tourze\CouponCommandBundle\Service\CommandManagementService;
-
-// 验证口令
-$validationService = $container->get(CommandValidationService::class);
-$result = $validationService->validateCommand('NEWUSER2024', 'user123');
-
-if ($result['valid']) {
-    // 口令有效，可以使用
-    $useResult = $validationService->useCommand('NEWUSER2024', 'user123');
-    
-    if ($useResult['success']) {
-        echo "优惠券领取成功，ID：" . $useResult['couponId'];
-    }
-}
-
-// 创建口令配置
+// Create command configuration
 $managementService = $container->get(CommandManagementService::class);
 $commandConfig = $managementService->createCommandConfig('SPRING2024', $coupon);
 
-// 添加使用限制
+// Add usage restrictions
 $managementService->addCommandLimit(
     $commandConfig->getId(),
-    maxUsagePerUser: 1,        // 每人限用1次
-    maxTotalUsage: 1000,       // 总共1000次
+    maxUsagePerUser: 1,        // 1 use per person
+    maxTotalUsage: 1000,       // 1000 total uses
     startTime: new \DateTime('2024-03-01'),
     endTime: new \DateTime('2024-03-31')
 );
 ```
 
-### 高级配置
+## Advanced Usage
+
+### User Group Restrictions
 
 ```php
-// 创建带用户群体限制的口令
+// Create command with user group restrictions
 $managementService->addCommandLimit(
     $commandConfigId,
     maxUsagePerUser: 3,
-    allowedUsers: ['vip_user_1', 'vip_user_2'],  // 只允许VIP用户
-    allowedUserTags: ['premium', 'gold']         // 允许特定标签用户
+    allowedUsers: ['vip_user_1', 'vip_user_2'],  // Only allow VIP users
+    allowedUserTags: ['premium', 'gold']         // Allow specific tagged users
 );
 
-// 获取使用统计
+// Get usage statistics
 $stats = $managementService->getCommandConfigDetail($commandConfigId);
-echo "总使用次数：" . $stats['stats']['totalUsage'];
-echo "成功次数：" . $stats['stats']['successUsage'];
+echo "Total usage: " . $stats['stats']['totalUsage'];
+echo "Successful usage: " . $stats['stats']['successUsage'];
 ```
 
-## 服务配置
+## Service Configuration
 
-在 `services.yaml` 中，Bundle 会自动注册以下服务：
+In `services.yaml`, the bundle automatically registers the following services:
 
-- `CommandValidationService`：口令验证服务
-- `CommandManagementService`：口令管理服务
-- JsonRPC 方法：`ValidateCouponCommand`、`UseCouponCommand`
+- `CommandValidationService`: Command validation service
+- `CommandManagementService`: Command management service
+- JsonRPC methods: `ValidateCouponCommand`, `UseCouponCommand`
 
-## 错误处理
+## Error Handling
 
-### 常见错误码
+### Common Error Messages
 
-| 错误消息 | 说明 | 解决方案 |
-|---------|------|---------|
-| 口令不存在 | 输入的口令未配置 | 检查口令是否正确或已创建 |
-| 优惠券不存在 | 关联的优惠券已删除 | 重新关联有效的优惠券 |
-| 口令使用时间超出有效期 | 超出时间限制 | 检查时间配置 |
-| 口令使用次数已达上限 | 超出总次数限制 | 增加限制次数或创建新口令 |
-| 您不在此口令的使用范围内 | 用户不在允许列表 | 添加用户到允许列表 |
-| 您已达到此口令的使用次数上限 | 用户个人次数限制 | 增加个人使用次数限制 |
+| Error Message | Description | Solution |
+|---------------|-------------|----------|
+| Command does not exist | Entered command is not configured | Check if command is correct or has been created |
+| Coupon does not exist | Associated coupon has been deleted | Re-associate with a valid coupon |
+| Command usage time is outside valid period | Outside time restrictions | Check time configuration |
+| Command usage count has reached limit | Exceeded total count limit | Increase limit or create new command |
+| You are not in the usage scope of this command | User not in allowed list | Add user to allowed list |
+| You have reached the usage limit for this command | User personal count limit exceeded | Increase personal usage limit |
 
-### 日志记录
+### Logging
 
-所有口令使用都会记录详细日志：
+All command usage is logged with detailed information:
 
-- 使用时间
-- 用户信息
-- 成功/失败状态
-- 失败原因
-- 额外上下文信息
+- Usage timestamp
+- User information
+- Success/failure status
+- Failure reason
+- Additional context information
 
-## 测试
+## Testing
 
-运行测试套件：
+Run the test suite:
 
 ```bash
 ./vendor/bin/phpunit packages/coupon-command-bundle/tests
 ```
 
-测试覆盖：
-- 实体单元测试
-- 服务层业务逻辑测试
-- 集成测试
-- JsonRPC 接口测试
+Test coverage includes:
+- Entity unit tests
+- Service layer business logic tests
+- Integration tests
+- JsonRPC interface tests
 
-## 依赖要求
+## Contributing
 
-- PHP 8.1+
-- Symfony 6.4+
-- Doctrine ORM 3.0+
-- tourze/coupon-core-bundle
-- tourze/json-rpc-core
+Please see [CONTRIBUTING.md](../../CONTRIBUTING.md) for details on how to 
+contribute to this project.
 
-## 许可证
+## Support
+
+For issues or suggestions, please submit an Issue or Pull Request on the 
+[main repository](https://github.com/tourze/php-monorepo).
+
+## License
 
 MIT License
 
-## 支持
-
-如有问题或建议，请提交 Issue 或 Pull Request。
-
-## 更新日志
+## Changelog
 
 ### v0.0.1
-- 初始版本发布
-- 完整的口令系统功能
-- JsonRPC 2.0 接口支持
-- EasyAdmin 管理界面
-- 完整的单元测试覆盖
+- Initial version release
+- Complete command system functionality
+- JSON-RPC 2.0 interface support
+- EasyAdmin management interface
+- Complete unit test coverage

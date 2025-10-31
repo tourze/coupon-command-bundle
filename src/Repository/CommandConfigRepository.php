@@ -5,17 +5,14 @@ namespace Tourze\CouponCommandBundle\Repository;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
 use Tourze\CouponCommandBundle\Entity\CommandConfig;
-
+use Tourze\PHPUnitSymfonyKernelTest\Attribute\AsRepository;
 
 /**
- * @method CommandConfig|null find($id, $lockMode = null, $lockVersion = null)
- * @method CommandConfig|null findOneBy(array $criteria, array $orderBy = null)
- * @method CommandConfig[]    findAll()
- * @method CommandConfig[]    findBy(array $criteria, array $orderBy = null, $limit = null, $offset = null)
+ * @extends ServiceEntityRepository<CommandConfig>
  */
+#[AsRepository(entityClass: CommandConfig::class)]
 class CommandConfigRepository extends ServiceEntityRepository
 {
-
     public function __construct(ManagerRegistry $registry)
     {
         parent::__construct($registry, CommandConfig::class);
@@ -26,49 +23,67 @@ class CommandConfigRepository extends ServiceEntityRepository
      */
     public function findByCommand(string $command): ?CommandConfig
     {
-        return $this->createQueryBuilder('c')
+        $result = $this->createQueryBuilder('c')
             ->andWhere('c.command = :command')
             ->setParameter('command', $command)
             ->getQuery()
-            ->getOneOrNullResult();
+            ->getOneOrNullResult()
+        ;
+
+        return $result instanceof CommandConfig ? $result : null;
     }
 
     /**
      * 根据优惠券ID查找口令配置
+     *
+     * 注意：由于 coupon 是 inverse side 关联，我们需要通过 owning side 来查询
+     * 这里我们通过 Coupon 实体的 commandConfig 字段来查找
      */
     public function findByCouponId(string $couponId): ?CommandConfig
     {
-        return $this->createQueryBuilder('c')
-            ->andWhere('c.coupon = :couponId')
+        $result = $this->createQueryBuilder('c')
+            ->innerJoin('Tourze\CouponCoreBundle\Entity\Coupon', 'coupon', 'WITH', 'coupon.commandConfig = c')
+            ->andWhere('coupon.id = :couponId')
             ->setParameter('couponId', $couponId)
             ->getQuery()
-            ->getOneOrNullResult();
+            ->getOneOrNullResult()
+        ;
+
+        return $result instanceof CommandConfig ? $result : null;
     }
 
     /**
      * 查找所有有限制的口令配置
+     *
+     * @return array<int, CommandConfig>
      */
     public function findAllWithLimits(): array
     {
-        return $this->createQueryBuilder('c')
-            ->leftJoin('c.commandLimit', 'cl')
-            ->andWhere('cl.id IS NOT NULL')
+        $result = $this->createQueryBuilder('c')
+            ->innerJoin('c.commandLimit', 'cl')
             ->getQuery()
-            ->getResult();
+            ->getResult()
+        ;
+
+        return is_array($result) ? array_values(array_filter($result, fn ($item) => $item instanceof CommandConfig)) : [];
     }
 
     /**
      * 查找所有启用限制的口令配置
+     *
+     * @return array<int, CommandConfig>
      */
     public function findAllWithEnabledLimits(): array
     {
-        return $this->createQueryBuilder('c')
-            ->leftJoin('c.commandLimit', 'cl')
-            ->andWhere('cl.id IS NOT NULL')
+        $result = $this->createQueryBuilder('c')
+            ->innerJoin('c.commandLimit', 'cl')
             ->andWhere('cl.isEnabled = :enabled')
             ->setParameter('enabled', true)
             ->getQuery()
-            ->getResult();
+            ->getResult()
+        ;
+
+        return is_array($result) ? array_values(array_filter($result, fn ($item) => $item instanceof CommandConfig)) : [];
     }
 
     /**
@@ -79,11 +94,13 @@ class CommandConfigRepository extends ServiceEntityRepository
         $qb = $this->createQueryBuilder('c')
             ->select('count(c.id)')
             ->andWhere('c.command = :command')
-            ->setParameter('command', $command);
+            ->setParameter('command', $command)
+        ;
 
-        if ($excludeId !== null) {
+        if (null !== $excludeId) {
             $qb->andWhere('c.id != :excludeId')
-                ->setParameter('excludeId', $excludeId);
+                ->setParameter('excludeId', $excludeId)
+            ;
         }
 
         return $qb->getQuery()->getSingleScalarResult() > 0;
@@ -91,21 +108,46 @@ class CommandConfigRepository extends ServiceEntityRepository
 
     /**
      * 获取使用统计
+     *
+     * @return array<string, int>
      */
     public function getUsageStats(string $commandConfigId): array
     {
+        /** @var array<string, string|int> $result */
         $result = $this->createQueryBuilder('c')
-            ->select('count(ur.id) as totalUsage, count(CASE WHEN ur.isSuccess = true THEN 1 END) as successUsage')
+            ->select('count(ur.id) as totalUsage, sum(CASE WHEN ur.isSuccess = true THEN 1 ELSE 0 END) as successUsage')
             ->leftJoin('c.usageRecords', 'ur')
             ->andWhere('c.id = :commandConfigId')
             ->setParameter('commandConfigId', $commandConfigId)
             ->getQuery()
-            ->getSingleResult();
+            ->getSingleResult()
+        ;
+
+        $totalUsage = (int) ($result['totalUsage'] ?? 0);
+        $successUsage = (int) ($result['successUsage'] ?? 0);
 
         return [
-            'totalUsage' => (int) $result['totalUsage'],
-            'successUsage' => (int) $result['successUsage'],
-            'failureUsage' => (int) $result['totalUsage'] - (int) $result['successUsage'],
+            'totalUsage' => $totalUsage,
+            'successUsage' => $successUsage,
+            'failureUsage' => $totalUsage - $successUsage,
         ];
+    }
+
+    public function save(CommandConfig $entity, bool $flush = true): void
+    {
+        $this->getEntityManager()->persist($entity);
+
+        if ($flush) {
+            $this->getEntityManager()->flush();
+        }
+    }
+
+    public function remove(CommandConfig $entity, bool $flush = true): void
+    {
+        $this->getEntityManager()->remove($entity);
+
+        if ($flush) {
+            $this->getEntityManager()->flush();
+        }
     }
 }

@@ -8,9 +8,11 @@ use Tourze\CouponCommandBundle\Service\CommandValidationService;
 use Tourze\JsonRPC\Core\Attribute\MethodDoc;
 use Tourze\JsonRPC\Core\Attribute\MethodExpose;
 use Tourze\JsonRPC\Core\Attribute\MethodParam;
+use Tourze\JsonRPC\Core\Attribute\MethodTag;
 use Tourze\JsonRPC\Core\Procedure\BaseProcedure;
 
 #[MethodExpose(method: 'ValidateCouponCommand')]
+#[MethodTag(name: '优惠券')]
 #[MethodDoc(summary: '验证优惠券口令', description: '验证指定口令的有效性，不实际使用口令')]
 class ValidateCouponCommand extends BaseProcedure
 {
@@ -27,6 +29,7 @@ class ValidateCouponCommand extends BaseProcedure
     {
     }
 
+    /** @return array<string, mixed> */
     public function execute(): array
     {
         return $this->commandValidationService->validateCommand(
@@ -35,6 +38,7 @@ class ValidateCouponCommand extends BaseProcedure
         );
     }
 
+    /** @return array<string, mixed>|null */
     public static function getMockResult(): ?array
     {
         return [

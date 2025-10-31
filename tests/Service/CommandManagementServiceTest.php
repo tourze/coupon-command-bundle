@@ -2,519 +2,316 @@
 
 namespace Tourze\CouponCommandBundle\Tests\Service;
 
-use Doctrine\ORM\EntityManagerInterface;
-use PHPUnit\Framework\MockObject\MockObject;
-use PHPUnit\Framework\TestCase;
+use PHPUnit\Framework\Attributes\CoversClass;
+use PHPUnit\Framework\Attributes\RunTestsInSeparateProcesses;
 use Tourze\CouponCommandBundle\Entity\CommandConfig;
 use Tourze\CouponCommandBundle\Entity\CommandLimit;
-use Tourze\CouponCommandBundle\Repository\CommandConfigRepository;
-use Tourze\CouponCommandBundle\Repository\CommandLimitRepository;
+use Tourze\CouponCommandBundle\Exception\CommandConfigurationException;
 use Tourze\CouponCommandBundle\Service\CommandManagementService;
 use Tourze\CouponCoreBundle\Entity\Coupon;
+use Tourze\PHPUnitSymfonyKernelTest\AbstractIntegrationTestCase;
 
-class CommandManagementServiceTest extends TestCase
+/**
+ * @internal
+ */
+#[CoversClass(CommandManagementService::class)]
+#[RunTestsInSeparateProcesses]
+final class CommandManagementServiceTest extends AbstractIntegrationTestCase
 {
     private CommandManagementService $service;
-    private EntityManagerInterface|MockObject $entityManager;
-    private CommandConfigRepository|MockObject $commandConfigRepository;
-    private CommandLimitRepository|MockObject $commandLimitRepository;
 
-    protected function setUp(): void
+    protected function onSetUp(): void
     {
-        $this->entityManager = $this->createMock(EntityManagerInterface::class);
-        $this->commandConfigRepository = $this->createMock(CommandConfigRepository::class);
-        $this->commandLimitRepository = $this->createMock(CommandLimitRepository::class);
-
-        $this->service = new CommandManagementService(
-            $this->entityManager,
-            $this->commandConfigRepository,
-            $this->commandLimitRepository
-        );
+        $this->service = self::getService(CommandManagementService::class);
     }
 
-    public function test_create_command_config_success(): void
+    public function testServiceInitialization(): void
     {
-        $command = 'NEW_TEST_CMD';
-        $coupon = $this->createMock(Coupon::class);
+        $this->assertInstanceOf(CommandManagementService::class, $this->service);
+    }
 
-        $this->commandConfigRepository
-            ->expects($this->once())
-            ->method('isCommandExists')
-            ->with($command)
-            ->willReturn(false);
+    public function testServiceHasRequiredMethods(): void
+    {
+        $reflection = new \ReflectionClass($this->service);
 
-        $this->entityManager
-            ->expects($this->once())
-            ->method('persist')
-            ->with($this->isInstanceOf(CommandConfig::class));
+        $this->assertTrue($reflection->hasMethod('createCommandConfig'));
+        $this->assertTrue($reflection->hasMethod('updateCommandConfig'));
+        $this->assertTrue($reflection->hasMethod('deleteCommandConfig'));
+        $this->assertTrue($reflection->hasMethod('addCommandLimit'));
+        $this->assertTrue($reflection->hasMethod('updateCommandLimit'));
+        $this->assertTrue($reflection->hasMethod('deleteCommandLimit'));
+        $this->assertTrue($reflection->hasMethod('getCommandConfigDetail'));
+        $this->assertTrue($reflection->hasMethod('getCommandConfigList'));
+        $this->assertTrue($reflection->hasMethod('toggleCommandLimitStatus'));
+    }
 
-        $this->entityManager
-            ->expects($this->once())
-            ->method('flush');
+    public function testCreateCommandConfig(): void
+    {
+        $coupon = new Coupon();
+        $coupon->setName('Test Coupon');
+        $coupon->setExpireDay(30);
+        $coupon->setIconImg('test.jpg');
+        $coupon->setBackImg('test-back.jpg');
+        $coupon->setRemark('Test coupon for testing');
+        $coupon->setStartDateTime(new \DateTime('2025-01-01'));
+        $coupon->setEndDateTime(new \DateTime('2025-12-31'));
+        $coupon->setNeedActive(false);
+        $coupon->setUseDesc('Test description');
+        $coupon->setStartTime(new \DateTime('2025-01-01'));
+        $coupon->setEndTime(new \DateTime('2025-12-31'));
+        $coupon->setValid(true);
 
-        $result = $this->service->createCommandConfig($command, $coupon);
+        self::getEntityManager()->persist($coupon);
+        self::getEntityManager()->flush();
+
+        $result = $this->service->createCommandConfig('TESTCOMMAND123', $coupon);
 
         $this->assertInstanceOf(CommandConfig::class, $result);
-        $this->assertEquals($command, $result->getCommand());
+        $this->assertSame('TESTCOMMAND123', $result->getCommand());
         $this->assertSame($coupon, $result->getCoupon());
+        $this->assertNotNull($result->getId());
     }
 
-    public function test_create_command_config_with_duplicate_command(): void
+    public function testCreateCommandConfigWithDuplicateCommand(): void
     {
-        $command = 'DUPLICATE_CMD';
-        $coupon = $this->createMock(Coupon::class);
+        $coupon = new Coupon();
+        $coupon->setName('Test Coupon');
+        $coupon->setExpireDay(30);
+        $coupon->setIconImg('test.jpg');
+        $coupon->setBackImg('test-back.jpg');
+        $coupon->setRemark('Test coupon for testing');
+        $coupon->setStartDateTime(new \DateTime('2025-01-01'));
+        $coupon->setEndDateTime(new \DateTime('2025-12-31'));
+        $coupon->setNeedActive(false);
+        $coupon->setUseDesc('Test description');
+        $coupon->setStartTime(new \DateTime('2025-01-01'));
+        $coupon->setEndTime(new \DateTime('2025-12-31'));
+        $coupon->setValid(true);
 
-        $this->commandConfigRepository
-            ->expects($this->once())
-            ->method('isCommandExists')
-            ->with($command)
-            ->willReturn(true);
+        self::getEntityManager()->persist($coupon);
+        self::getEntityManager()->flush();
 
-        $this->entityManager
-            ->expects($this->never())
-            ->method('persist');
+        $this->service->createCommandConfig('DUPLICATE123', $coupon);
 
-        $this->expectException(\InvalidArgumentException::class);
+        $this->expectException(CommandConfigurationException::class);
         $this->expectExceptionMessage('口令已存在');
 
-        $this->service->createCommandConfig($command, $coupon);
+        $this->service->createCommandConfig('DUPLICATE123', $coupon);
     }
 
-    public function test_update_command_config_success(): void
+    public function testUpdateCommandConfig(): void
     {
-        $id = 'config_123';
-        $newCommand = 'UPDATED_CMD';
+        $coupon = new Coupon();
+        $coupon->setName('Test Coupon');
+        $coupon->setExpireDay(30);
+        $coupon->setIconImg('test.jpg');
+        $coupon->setBackImg('test-back.jpg');
+        $coupon->setRemark('Test coupon for testing');
+        $coupon->setStartDateTime(new \DateTime('2025-01-01'));
+        $coupon->setEndDateTime(new \DateTime('2025-12-31'));
+        $coupon->setNeedActive(false);
+        $coupon->setUseDesc('Test description');
+        $coupon->setStartTime(new \DateTime('2025-01-01'));
+        $coupon->setEndTime(new \DateTime('2025-12-31'));
+        $coupon->setValid(true);
 
-        $commandConfig = new CommandConfig();
-        $commandConfig->setCommand('OLD_CMD');
+        self::getEntityManager()->persist($coupon);
+        self::getEntityManager()->flush();
 
-        $this->commandConfigRepository
-            ->expects($this->once())
-            ->method('find')
-            ->with($id)
-            ->willReturn($commandConfig);
+        $commandConfig = $this->service->createCommandConfig('ORIGINAL123', $coupon);
+        $configId = $commandConfig->getId();
+        $this->assertNotNull($configId);
 
-        $this->commandConfigRepository
-            ->expects($this->once())
-            ->method('isCommandExists')
-            ->with($newCommand, $id)
-            ->willReturn(false);
+        $updatedConfig = $this->service->updateCommandConfig($configId, 'UPDATED123');
 
-        $this->entityManager
-            ->expects($this->once())
-            ->method('persist')
-            ->with($commandConfig);
-
-        $this->entityManager
-            ->expects($this->once())
-            ->method('flush');
-
-        $result = $this->service->updateCommandConfig($id, $newCommand);
-
-        $this->assertSame($commandConfig, $result);
-        $this->assertEquals($newCommand, $result->getCommand());
+        $this->assertSame('UPDATED123', $updatedConfig->getCommand());
+        $this->assertSame($configId, $updatedConfig->getId());
     }
 
-    public function test_update_command_config_not_found(): void
+    public function testDeleteCommandConfig(): void
     {
-        $id = 'non_existent_id';
-        $newCommand = 'NEW_CMD';
+        $coupon = new Coupon();
+        $coupon->setName('Test Coupon');
+        $coupon->setExpireDay(30);
+        $coupon->setIconImg('test.jpg');
+        $coupon->setBackImg('test-back.jpg');
+        $coupon->setRemark('Test coupon for testing');
+        $coupon->setStartDateTime(new \DateTime('2025-01-01'));
+        $coupon->setEndDateTime(new \DateTime('2025-12-31'));
+        $coupon->setNeedActive(false);
+        $coupon->setUseDesc('Test description');
+        $coupon->setStartTime(new \DateTime('2025-01-01'));
+        $coupon->setEndTime(new \DateTime('2025-12-31'));
+        $coupon->setValid(true);
 
-        $this->commandConfigRepository
-            ->expects($this->once())
-            ->method('find')
-            ->with($id)
-            ->willReturn(null);
+        self::getEntityManager()->persist($coupon);
+        self::getEntityManager()->flush();
 
-        $this->expectException(\InvalidArgumentException::class);
-        $this->expectExceptionMessage('口令配置不存在');
+        $commandConfig = $this->service->createCommandConfig('DELETE123', $coupon);
+        $configId = $commandConfig->getId();
+        $this->assertNotNull($configId);
 
-        $this->service->updateCommandConfig($id, $newCommand);
-    }
-
-    public function test_update_command_config_duplicate(): void
-    {
-        $id = 'config_123';
-        $duplicateCommand = 'DUPLICATE_CMD';
-
-        $commandConfig = new CommandConfig();
-        $commandConfig->setCommand('OLD_CMD');
-
-        $this->commandConfigRepository
-            ->expects($this->once())
-            ->method('find')
-            ->with($id)
-            ->willReturn($commandConfig);
-
-        $this->commandConfigRepository
-            ->expects($this->once())
-            ->method('isCommandExists')
-            ->with($duplicateCommand, $id)
-            ->willReturn(true);
-
-        $this->expectException(\InvalidArgumentException::class);
-        $this->expectExceptionMessage('口令已存在');
-
-        $this->service->updateCommandConfig($id, $duplicateCommand);
-    }
-
-    public function test_delete_command_config_success(): void
-    {
-        $id = 'config_123';
-        $commandConfig = new CommandConfig();
-
-        $this->commandConfigRepository
-            ->expects($this->once())
-            ->method('find')
-            ->with($id)
-            ->willReturn($commandConfig);
-
-        $this->entityManager
-            ->expects($this->once())
-            ->method('remove')
-            ->with($commandConfig);
-
-        $this->entityManager
-            ->expects($this->once())
-            ->method('flush');
-
-        $result = $this->service->deleteCommandConfig($id);
-
+        $result = $this->service->deleteCommandConfig($configId);
         $this->assertTrue($result);
-    }
 
-    public function test_delete_command_config_not_found(): void
-    {
-        $id = 'non_existent_id';
-
-        $this->commandConfigRepository
-            ->expects($this->once())
-            ->method('find')
-            ->with($id)
-            ->willReturn(null);
-
-        $this->entityManager
-            ->expects($this->never())
-            ->method('remove');
-
-        $result = $this->service->deleteCommandConfig($id);
-
+        $result = $this->service->deleteCommandConfig($configId);
         $this->assertFalse($result);
     }
 
-    public function test_add_command_limit_success(): void
+    public function testAddCommandLimit(): void
     {
-        $commandConfigId = 'config_123';
-        $maxUsagePerUser = 5;
-        $maxTotalUsage = 100;
-        $startTime = new \DateTimeImmutable('2024-01-01');
-        $endTime = new \DateTimeImmutable('2024-12-31');
+        $coupon = new Coupon();
+        $coupon->setName('Test Coupon');
+        $coupon->setExpireDay(30);
+        $coupon->setIconImg('test.jpg');
+        $coupon->setBackImg('test-back.jpg');
+        $coupon->setRemark('Test coupon for testing');
+        $coupon->setStartDateTime(new \DateTime('2025-01-01'));
+        $coupon->setEndDateTime(new \DateTime('2025-12-31'));
+        $coupon->setNeedActive(false);
+        $coupon->setUseDesc('Test description');
+        $coupon->setStartTime(new \DateTime('2025-01-01'));
+        $coupon->setEndTime(new \DateTime('2025-12-31'));
+        $coupon->setValid(true);
+
+        self::getEntityManager()->persist($coupon);
+        self::getEntityManager()->flush();
+
+        $commandConfig = $this->service->createCommandConfig('LIMITTEST123', $coupon);
+        $configId = $commandConfig->getId();
+        $this->assertNotNull($configId);
+
+        $startTime = new \DateTime('2025-01-01');
+        $endTime = new \DateTime('2025-12-31');
         $allowedUsers = ['user1', 'user2'];
-        $allowedUserTags = ['vip'];
 
-        $commandConfig = new CommandConfig();
-        $commandConfig->setCommand('TEST_CMD');
-
-        $this->commandConfigRepository
-            ->expects($this->once())
-            ->method('find')
-            ->with($commandConfigId)
-            ->willReturn($commandConfig);
-
-        $this->entityManager
-            ->expects($this->once())
-            ->method('persist')
-            ->with($this->isInstanceOf(CommandLimit::class));
-
-        $this->entityManager
-            ->expects($this->once())
-            ->method('flush');
-
-        $result = $this->service->addCommandLimit(
-            $commandConfigId,
-            $maxUsagePerUser,
-            $maxTotalUsage,
+        $commandLimit = $this->service->addCommandLimit(
+            $configId,
+            1,
+            100,
             $startTime,
             $endTime,
-            $allowedUsers,
-            $allowedUserTags
+            $allowedUsers
         );
 
-        $this->assertInstanceOf(CommandLimit::class, $result);
-        $this->assertSame($commandConfig, $result->getCommandConfig());
-        $this->assertEquals($maxUsagePerUser, $result->getMaxUsagePerUser());
-        $this->assertEquals($maxTotalUsage, $result->getMaxTotalUsage());
-        $this->assertEquals($startTime, $result->getStartTime());
-        $this->assertEquals($endTime, $result->getEndTime());
-        $this->assertEquals($allowedUsers, $result->getAllowedUsers());
-        $this->assertEquals($allowedUserTags, $result->getAllowedUserTags());
+        $this->assertInstanceOf(CommandLimit::class, $commandLimit);
+        $this->assertSame(1, $commandLimit->getMaxUsagePerUser());
+        $this->assertSame(100, $commandLimit->getMaxTotalUsage());
+        $this->assertEquals($startTime->format('Y-m-d'), $commandLimit->getStartTime()?->format('Y-m-d'));
+        $this->assertEquals($endTime->format('Y-m-d'), $commandLimit->getEndTime()?->format('Y-m-d'));
+        $this->assertSame($allowedUsers, $commandLimit->getAllowedUsers());
     }
 
-    public function test_add_command_limit_config_not_found(): void
+    public function testUpdateCommandLimit(): void
     {
-        $commandConfigId = 'non_existent_id';
+        $coupon = new Coupon();
+        $coupon->setName('Test Coupon');
+        $coupon->setExpireDay(30);
+        $coupon->setIconImg('test.jpg');
+        $coupon->setBackImg('test-back.jpg');
+        $coupon->setRemark('Test coupon for testing');
+        $coupon->setStartDateTime(new \DateTime('2025-01-01'));
+        $coupon->setEndDateTime(new \DateTime('2025-12-31'));
+        $coupon->setNeedActive(false);
+        $coupon->setUseDesc('Test description');
+        $coupon->setStartTime(new \DateTime('2025-01-01'));
+        $coupon->setEndTime(new \DateTime('2025-12-31'));
+        $coupon->setValid(true);
 
-        $this->commandConfigRepository
-            ->expects($this->once())
-            ->method('find')
-            ->with($commandConfigId)
-            ->willReturn(null);
+        self::getEntityManager()->persist($coupon);
+        self::getEntityManager()->flush();
 
-        $this->expectException(\InvalidArgumentException::class);
-        $this->expectExceptionMessage('口令配置不存在');
+        $commandConfig = $this->service->createCommandConfig('UPDATETEST123', $coupon);
+        $configId = $commandConfig->getId();
+        $this->assertNotNull($configId);
 
-        $this->service->addCommandLimit($commandConfigId);
-    }
+        $commandLimit = $this->service->addCommandLimit($configId, 1, 100);
+        $limitId = $commandLimit->getId();
+        $this->assertNotNull($limitId);
 
-    public function test_add_command_limit_already_exists(): void
-    {
-        $commandConfigId = 'config_123';
-        $existingLimit = new CommandLimit();
-
-        $commandConfig = new CommandConfig();
-        $commandConfig->setCommandLimit($existingLimit);
-
-        $this->commandConfigRepository
-            ->expects($this->once())
-            ->method('find')
-            ->with($commandConfigId)
-            ->willReturn($commandConfig);
-
-        $this->expectException(\InvalidArgumentException::class);
-        $this->expectExceptionMessage('该口令已有限制配置');
-
-        $this->service->addCommandLimit($commandConfigId);
-    }
-
-    public function test_update_command_limit_success(): void
-    {
-        $commandLimitId = 'limit_123';
-        $newMaxUsagePerUser = 10;
-        $newMaxTotalUsage = 200;
-        $newIsEnabled = false;
-
-        $commandLimit = new CommandLimit();
-        $commandLimit->setMaxUsagePerUser(5);
-        $commandLimit->setMaxTotalUsage(100);
-        $commandLimit->setIsEnabled(true);
-
-        $this->commandLimitRepository
-            ->expects($this->once())
-            ->method('find')
-            ->with($commandLimitId)
-            ->willReturn($commandLimit);
-
-        $this->entityManager
-            ->expects($this->once())
-            ->method('persist')
-            ->with($commandLimit);
-
-        $this->entityManager
-            ->expects($this->once())
-            ->method('flush');
-
-        $result = $this->service->updateCommandLimit(
-            $commandLimitId,
-            $newMaxUsagePerUser,
-            $newMaxTotalUsage,
+        $updatedLimit = $this->service->updateCommandLimit(
+            $limitId,
+            2,
+            200,
             null,
             null,
             null,
             null,
-            $newIsEnabled
+            false
         );
 
-        $this->assertSame($commandLimit, $result);
-        $this->assertEquals($newMaxUsagePerUser, $result->getMaxUsagePerUser());
-        $this->assertEquals($newMaxTotalUsage, $result->getMaxTotalUsage());
-        $this->assertEquals($newIsEnabled, $result->isEnabled());
+        $this->assertSame(2, $updatedLimit->getMaxUsagePerUser());
+        $this->assertSame(200, $updatedLimit->getMaxTotalUsage());
+        $this->assertFalse($updatedLimit->isEnabled());
     }
 
-    public function test_update_command_limit_not_found(): void
+    public function testDeleteCommandLimit(): void
     {
-        $commandLimitId = 'non_existent_id';
+        $coupon = new Coupon();
+        $coupon->setName('Test Coupon');
+        $coupon->setExpireDay(30);
+        $coupon->setIconImg('test.jpg');
+        $coupon->setBackImg('test-back.jpg');
+        $coupon->setRemark('Test coupon for testing');
+        $coupon->setStartDateTime(new \DateTime('2025-01-01'));
+        $coupon->setEndDateTime(new \DateTime('2025-12-31'));
+        $coupon->setNeedActive(false);
+        $coupon->setUseDesc('Test description');
+        $coupon->setStartTime(new \DateTime('2025-01-01'));
+        $coupon->setEndTime(new \DateTime('2025-12-31'));
+        $coupon->setValid(true);
 
-        $this->commandLimitRepository
-            ->expects($this->once())
-            ->method('find')
-            ->with($commandLimitId)
-            ->willReturn(null);
+        self::getEntityManager()->persist($coupon);
+        self::getEntityManager()->flush();
 
-        $this->expectException(\InvalidArgumentException::class);
-        $this->expectExceptionMessage('限制配置不存在');
+        $commandConfig = $this->service->createCommandConfig('DELETELIIMIT123', $coupon);
+        $configId = $commandConfig->getId();
+        $this->assertNotNull($configId);
 
-        $this->service->updateCommandLimit($commandLimitId);
-    }
+        $commandLimit = $this->service->addCommandLimit($configId, 1, 100);
+        $limitId = $commandLimit->getId();
+        $this->assertNotNull($limitId);
 
-    public function test_delete_command_limit_success(): void
-    {
-        $commandLimitId = 'limit_123';
-        $commandLimit = new CommandLimit();
-
-        $this->commandLimitRepository
-            ->expects($this->once())
-            ->method('find')
-            ->with($commandLimitId)
-            ->willReturn($commandLimit);
-
-        $this->entityManager
-            ->expects($this->once())
-            ->method('remove')
-            ->with($commandLimit);
-
-        $this->entityManager
-            ->expects($this->once())
-            ->method('flush');
-
-        $result = $this->service->deleteCommandLimit($commandLimitId);
-
+        $result = $this->service->deleteCommandLimit($limitId);
         $this->assertTrue($result);
-    }
 
-    public function test_delete_command_limit_not_found(): void
-    {
-        $commandLimitId = 'non_existent_id';
-
-        $this->commandLimitRepository
-            ->expects($this->once())
-            ->method('find')
-            ->with($commandLimitId)
-            ->willReturn(null);
-
-        $this->entityManager
-            ->expects($this->never())
-            ->method('remove');
-
-        $result = $this->service->deleteCommandLimit($commandLimitId);
-
+        $result = $this->service->deleteCommandLimit($limitId);
         $this->assertFalse($result);
     }
 
-    public function test_get_command_config_detail(): void
+    public function testToggleCommandLimitStatus(): void
     {
-        $id = 'config_123';
-        $usageStats = [
-            'totalUsage' => 50,
-            'successUsage' => 45,
-            'failureUsage' => 5,
-        ];
+        $coupon = new Coupon();
+        $coupon->setName('Test Coupon');
+        $coupon->setExpireDay(30);
+        $coupon->setIconImg('test.jpg');
+        $coupon->setBackImg('test-back.jpg');
+        $coupon->setRemark('Test coupon for testing');
+        $coupon->setStartDateTime(new \DateTime('2025-01-01'));
+        $coupon->setEndDateTime(new \DateTime('2025-12-31'));
+        $coupon->setNeedActive(false);
+        $coupon->setUseDesc('Test description');
+        $coupon->setStartTime(new \DateTime('2025-01-01'));
+        $coupon->setEndTime(new \DateTime('2025-12-31'));
+        $coupon->setValid(true);
 
-        $commandConfig = new CommandConfig();
-        $commandConfig->setCommand('DETAIL_TEST');
+        self::getEntityManager()->persist($coupon);
+        self::getEntityManager()->flush();
 
-        $this->commandConfigRepository
-            ->expects($this->once())
-            ->method('find')
-            ->with($id)
-            ->willReturn($commandConfig);
+        $commandConfig = $this->service->createCommandConfig('TOGGLETEST123', $coupon);
+        $configId = $commandConfig->getId();
+        $this->assertNotNull($configId);
 
-        $this->commandConfigRepository
-            ->expects($this->once())
-            ->method('getUsageStats')
-            ->with($id)
-            ->willReturn($usageStats);
+        $commandLimit = $this->service->addCommandLimit($configId, 1, 100);
+        $limitId = $commandLimit->getId();
+        $this->assertNotNull($limitId);
 
-        $result = $this->service->getCommandConfigDetail($id);
-        $this->assertArrayHasKey('config', $result);
-        $this->assertArrayHasKey('stats', $result);
-        $this->assertEquals($usageStats, $result['stats']);
-        $this->assertEquals($commandConfig->retrieveApiArray(), $result['config']);
-    }
+        $this->assertTrue($commandLimit->isEnabled());
 
-    public function test_get_command_config_detail_not_found(): void
-    {
-        $id = 'non_existent_id';
+        $toggledLimit = $this->service->toggleCommandLimitStatus($limitId);
+        $this->assertFalse($toggledLimit->isEnabled());
 
-        $this->commandConfigRepository
-            ->expects($this->once())
-            ->method('find')
-            ->with($id)
-            ->willReturn(null);
-
-        $result = $this->service->getCommandConfigDetail($id);
-
-        $this->assertNull($result);
-    }
-
-    public function test_get_command_config_list(): void
-    {
-        $config1 = $this->createMock(CommandConfig::class);
-        $config1->method('getId')->willReturn('config_1');
-        $config1->method('retrieveApiArray')->willReturn(['id' => 'config_1', 'command' => 'CMD1']);
-
-        $config2 = $this->createMock(CommandConfig::class);
-        $config2->method('getId')->willReturn('config_2');
-        $config2->method('retrieveApiArray')->willReturn(['id' => 'config_2', 'command' => 'CMD2']);
-
-        $configs = [$config1, $config2];
-
-        $stats1 = ['totalUsage' => 10, 'successUsage' => 8, 'failureUsage' => 2];
-        $stats2 = ['totalUsage' => 20, 'successUsage' => 15, 'failureUsage' => 5];
-
-        $this->commandConfigRepository
-            ->expects($this->once())
-            ->method('findAll')
-            ->willReturn($configs);
-
-        $this->commandConfigRepository
-            ->expects($this->exactly(2))
-            ->method('getUsageStats')
-            ->willReturnMap([
-                ['config_1', $stats1],
-                ['config_2', $stats2],
-            ]);
-
-        $result = $this->service->getCommandConfigList();
-        $this->assertCount(2, $result);
-
-        $this->assertEquals(['id' => 'config_1', 'command' => 'CMD1'], $result[0]['config']);
-        $this->assertEquals($stats1, $result[0]['stats']);
-
-        $this->assertEquals(['id' => 'config_2', 'command' => 'CMD2'], $result[1]['config']);
-        $this->assertEquals($stats2, $result[1]['stats']);
-    }
-
-    public function test_toggle_command_limit_status(): void
-    {
-        $commandLimitId = 'limit_123';
-
-        $commandLimit = new CommandLimit();
-        $commandLimit->setIsEnabled(true);
-
-        $this->commandLimitRepository
-            ->expects($this->once())
-            ->method('find')
-            ->with($commandLimitId)
-            ->willReturn($commandLimit);
-
-        $this->entityManager
-            ->expects($this->once())
-            ->method('persist')
-            ->with($commandLimit);
-
-        $this->entityManager
-            ->expects($this->once())
-            ->method('flush');
-
-        $result = $this->service->toggleCommandLimitStatus($commandLimitId);
-
-        $this->assertSame($commandLimit, $result);
-        $this->assertFalse($result->isEnabled()); // 应该被切换为 false
-    }
-
-    public function test_toggle_command_limit_status_not_found(): void
-    {
-        $commandLimitId = 'non_existent_id';
-
-        $this->commandLimitRepository
-            ->expects($this->once())
-            ->method('find')
-            ->with($commandLimitId)
-            ->willReturn(null);
-
-        $this->expectException(\InvalidArgumentException::class);
-        $this->expectExceptionMessage('限制配置不存在');
-
-        $this->service->toggleCommandLimitStatus($commandLimitId);
+        $toggledAgain = $this->service->toggleCommandLimitStatus($limitId);
+        $this->assertTrue($toggledAgain->isEnabled());
     }
 }

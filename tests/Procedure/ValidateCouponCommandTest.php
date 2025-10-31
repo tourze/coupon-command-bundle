@@ -2,218 +2,29 @@
 
 namespace Tourze\CouponCommandBundle\Tests\Procedure;
 
-use PHPUnit\Framework\MockObject\MockObject;
-use PHPUnit\Framework\TestCase;
-use Psr\Container\ContainerInterface;
+use PHPUnit\Framework\Attributes\CoversClass;
+use PHPUnit\Framework\Attributes\RunTestsInSeparateProcesses;
+use Symfony\Component\Validator\Constraints\Collection;
 use Tourze\CouponCommandBundle\Procedure\ValidateCouponCommand;
-use Tourze\CouponCommandBundle\Service\CommandValidationService;
+use Tourze\JsonRPC\Core\Tests\AbstractProcedureTestCase;
 
-class ValidateCouponCommandTest extends TestCase
+/**
+ * @internal
+ */
+#[CoversClass(ValidateCouponCommand::class)]
+#[RunTestsInSeparateProcesses]
+final class ValidateCouponCommandTest extends AbstractProcedureTestCase
 {
     private ValidateCouponCommand $procedure;
-    private ContainerInterface|MockObject $container;
-    private CommandValidationService|MockObject $validationService;
 
-    protected function setUp(): void
+    protected function onSetUp(): void
     {
-        $this->container = $this->createMock(ContainerInterface::class);
-        $this->validationService = $this->createMock(CommandValidationService::class);
-
-        $this->procedure = new ValidateCouponCommand($this->validationService);
-        $this->procedure->setContainer($this->container);
+        $procedure = self::getContainer()->get(ValidateCouponCommand::class);
+        $this->assertInstanceOf(ValidateCouponCommand::class, $procedure);
+        $this->procedure = $procedure;
     }
 
-    public function test_execute_with_valid_command(): void
-    {
-        $command = 'VALID_CMD_2024';
-        $userId = 'test_user_123';
-
-        $expectedResult = [
-            'valid' => true,
-            'couponInfo' => [
-                'id' => '1234567890',
-                'name' => '测试优惠券',
-                'type' => 'discount',
-                'amount' => 100,
-            ],
-            'commandConfig' => [
-                'id' => '9876543210',
-                'command' => 'VALID_CMD_2024',
-            ],
-        ];
-
-        $this->procedure->command = $command;
-        $this->procedure->userId = $userId;
-
-        $this->validationService
-            ->expects($this->once())
-            ->method('validateCommand')
-            ->with($command, $userId)
-            ->willReturn($expectedResult);
-
-        $result = $this->procedure->execute();
-
-        $this->assertEquals($expectedResult, $result);
-    }
-
-    public function test_execute_with_invalid_command(): void
-    {
-        $command = 'INVALID_CMD';
-        $userId = 'test_user_123';
-
-        $expectedResult = [
-            'valid' => false,
-            'reason' => '口令不存在',
-        ];
-
-        $this->procedure->command = $command;
-        $this->procedure->userId = $userId;
-
-        $this->validationService
-            ->expects($this->once())
-            ->method('validateCommand')
-            ->with($command, $userId)
-            ->willReturn($expectedResult);
-
-        $result = $this->procedure->execute();
-
-        $this->assertEquals($expectedResult, $result);
-        $this->assertFalse($result['valid']);
-        $this->assertEquals('口令不存在', $result['reason']);
-    }
-
-    public function test_execute_with_user_restrictions(): void
-    {
-        $command = 'RESTRICTED_CMD';
-        $userId = 'restricted_user';
-
-        $expectedResult = [
-            'valid' => false,
-            'reason' => '您不在此口令的使用范围内',
-        ];
-
-        $this->procedure->command = $command;
-        $this->procedure->userId = $userId;
-
-        $this->validationService
-            ->expects($this->once())
-            ->method('validateCommand')
-            ->with($command, $userId)
-            ->willReturn($expectedResult);
-
-        $result = $this->procedure->execute();
-
-        $this->assertEquals($expectedResult, $result);
-        $this->assertFalse($result['valid']);
-        $this->assertEquals('您不在此口令的使用范围内', $result['reason']);
-    }
-
-    public function test_execute_without_user_id(): void
-    {
-        $command = 'PUBLIC_CMD';
-
-        $expectedResult = [
-            'valid' => true,
-            'couponInfo' => [
-                'id' => '1111111111',
-                'name' => '公开优惠券',
-                'type' => 'discount',
-                'amount' => 50,
-            ],
-            'commandConfig' => [
-                'id' => '2222222222',
-                'command' => 'PUBLIC_CMD',
-            ],
-        ];
-
-        $this->procedure->command = $command;
-        $this->procedure->userId = null;
-
-        $this->validationService
-            ->expects($this->once())
-            ->method('validateCommand')
-            ->with($command, null)
-            ->willReturn($expectedResult);
-
-        $result = $this->procedure->execute();
-
-        $this->assertEquals($expectedResult, $result);
-        $this->assertTrue($result['valid']);
-    }
-
-    public function test_execute_with_time_limit_expired(): void
-    {
-        $command = 'EXPIRED_CMD';
-        $userId = 'test_user';
-
-        $expectedResult = [
-            'valid' => false,
-            'reason' => '口令使用时间超出有效期',
-        ];
-
-        $this->procedure->command = $command;
-        $this->procedure->userId = $userId;
-
-        $this->validationService
-            ->expects($this->once())
-            ->method('validateCommand')
-            ->with($command, $userId)
-            ->willReturn($expectedResult);
-
-        $result = $this->procedure->execute();
-
-        $this->assertEquals($expectedResult, $result);
-        $this->assertFalse($result['valid']);
-        $this->assertEquals('口令使用时间超出有效期', $result['reason']);
-    }
-
-    public function test_execute_with_usage_limit_exceeded(): void
-    {
-        $command = 'FULL_CMD';
-        $userId = 'test_user';
-
-        $expectedResult = [
-            'valid' => false,
-            'reason' => '口令使用次数已达上限',
-        ];
-
-        $this->procedure->command = $command;
-        $this->procedure->userId = $userId;
-
-        $this->validationService
-            ->expects($this->once())
-            ->method('validateCommand')
-            ->with($command, $userId)
-            ->willReturn($expectedResult);
-
-        $result = $this->procedure->execute();
-
-        $this->assertEquals($expectedResult, $result);
-        $this->assertFalse($result['valid']);
-        $this->assertEquals('口令使用次数已达上限', $result['reason']);
-    }
-
-    public function test_get_mock_result(): void
-    {
-        $mockResult = ValidateCouponCommand::getMockResult();
-        $this->assertArrayHasKey('valid', $mockResult);
-        $this->assertArrayHasKey('couponInfo', $mockResult);
-        $this->assertArrayHasKey('commandConfig', $mockResult);
-        $this->assertTrue($mockResult['valid']);
-
-    }
-
-    public function test_get_subscribed_services(): void
-    {
-        // 测试获取订阅的服务
-        $services = $this->procedure::getSubscribedServices();
-        // 由于现在是构造函数注入，这个方法可能不再需要
-        // 但保留测试以确保兼容性
-        $this->assertNotEmpty($services);
-        $this->assertContainsOnly('string', array_keys($services));
-    }
-
-    public function test_property_assignments(): void
+    public function testPropertyAssignments(): void
     {
         $command = 'TEST_COMMAND';
         $userId = 'user123';
@@ -225,10 +36,118 @@ class ValidateCouponCommandTest extends TestCase
         $this->assertEquals($userId, $this->procedure->userId);
     }
 
-    public function test_default_user_id_is_null(): void
+    public function testDefaultUserIdIsNull(): void
     {
-        // 验证默认的 userId 是 null
-        $procedure = new ValidateCouponCommand($this->validationService);
+        $procedure = self::getContainer()->get(ValidateCouponCommand::class);
+        $this->assertInstanceOf(ValidateCouponCommand::class, $procedure);
         $this->assertNull($procedure->userId);
+    }
+
+    public function testGetMockResult(): void
+    {
+        $mockResult = ValidateCouponCommand::getMockResult();
+        $this->assertNotNull($mockResult);
+        $this->assertArrayHasKey('valid', $mockResult);
+        $this->assertArrayHasKey('couponInfo', $mockResult);
+        $this->assertArrayHasKey('commandConfig', $mockResult);
+        $this->assertTrue($mockResult['valid']);
+    }
+
+    public function testGetSubscribedServices(): void
+    {
+        $services = $this->procedure::getSubscribedServices();
+        $this->assertNotEmpty($services);
+        foreach (array_keys($services) as $key) {
+            $this->assertIsString($key, 'Service key should be a string');
+        }
+    }
+
+    public function testExecute(): void
+    {
+        $this->procedure->command = 'TEST_COMMAND';
+        $this->procedure->userId = 'user123';
+
+        $result = $this->procedure->execute();
+
+        // 验证返回结果的基本结构
+        $this->assertArrayHasKey('valid', $result);
+        $this->assertIsBool($result['valid']);
+    }
+
+    public function testExecuteWithoutUserId(): void
+    {
+        $this->procedure->command = 'TEST_COMMAND';
+        $this->procedure->userId = null;
+
+        $result = $this->procedure->execute();
+
+        $this->assertArrayHasKey('valid', $result);
+        $this->assertIsBool($result['valid']);
+    }
+
+    public function testAssignParams(): void
+    {
+        $params = [
+            'command' => 'TEST_COMMAND',
+            'userId' => 'user123',
+        ];
+
+        $this->procedure->assignParams($params);
+
+        $this->assertEquals('TEST_COMMAND', $this->procedure->command);
+        $this->assertEquals('user123', $this->procedure->userId);
+        $this->assertEquals($params, $this->procedure->paramList);
+    }
+
+    public function testAssignParamsWithoutUserId(): void
+    {
+        $params = [
+            'command' => 'TEST_COMMAND',
+        ];
+
+        $this->procedure->assignParams($params);
+
+        $this->assertEquals('TEST_COMMAND', $this->procedure->command);
+        $this->assertNull($this->procedure->userId);
+        $this->assertEquals($params, $this->procedure->paramList);
+    }
+
+    public function testAssignParamsWithNull(): void
+    {
+        $this->procedure->assignParams(null);
+
+        $this->assertNull($this->procedure->paramList);
+    }
+
+    public function testGetParamsConstraint(): void
+    {
+        $constraint = $this->procedure->getParamsConstraint();
+
+        $this->assertInstanceOf(Collection::class, $constraint);
+
+        $fields = $constraint->fields;
+        $this->assertArrayHasKey('command', $fields);
+        $this->assertArrayHasKey('userId', $fields);
+    }
+
+    public function testGetPropertyDocument(): void
+    {
+        $commandDoc = $this->procedure->getPropertyDocument('command');
+        $this->assertNotNull($commandDoc);
+        $this->assertArrayHasKey('name', $commandDoc);
+        $this->assertArrayHasKey('type', $commandDoc);
+        $this->assertArrayHasKey('description', $commandDoc);
+        $this->assertEquals('command', $commandDoc['name']);
+        $this->assertEquals('string', $commandDoc['type']);
+        $this->assertEquals('口令内容', $commandDoc['description']);
+
+        $userIdDoc = $this->procedure->getPropertyDocument('userId');
+        $this->assertNotNull($userIdDoc);
+        $this->assertArrayHasKey('name', $userIdDoc);
+        $this->assertArrayHasKey('type', $userIdDoc);
+        $this->assertArrayHasKey('description', $userIdDoc);
+        $this->assertEquals('userId', $userIdDoc['name']);
+        $this->assertEquals('string', $userIdDoc['type']);
+        $this->assertEquals('用户ID（可选，用于检查用户相关限制）', $userIdDoc['description']);
     }
 }

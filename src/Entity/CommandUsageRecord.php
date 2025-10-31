@@ -4,14 +4,17 @@ namespace Tourze\CouponCommandBundle\Entity;
 
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
+use Symfony\Component\Validator\Constraints as Assert;
 use Tourze\Arrayable\ApiArrayInterface;
 use Tourze\CouponCommandBundle\Repository\CommandUsageRecordRepository;
-use Tourze\DoctrineIpBundle\Attribute\CreateIpColumn;
-use Tourze\DoctrineSnowflakeBundle\Service\SnowflakeIdGenerator;
+use Tourze\DoctrineIpBundle\Traits\CreatedFromIpAware;
 use Tourze\DoctrineSnowflakeBundle\Traits\SnowflakeKeyAware;
 use Tourze\DoctrineTimestampBundle\Traits\CreateTimeAware;
 use Tourze\DoctrineUserBundle\Traits\CreatedByAware;
 
+/**
+ * @implements ApiArrayInterface<string, mixed>
+ */
 #[ORM\Entity(repositoryClass: CommandUsageRecordRepository::class)]
 #[ORM\Table(name: 'coupon_command_usage_record', options: ['comment' => '优惠券口令使用记录'])]
 class CommandUsageRecord implements ApiArrayInterface, \Stringable
@@ -19,45 +22,49 @@ class CommandUsageRecord implements ApiArrayInterface, \Stringable
     use SnowflakeKeyAware;
     use CreateTimeAware;
     use CreatedByAware;
+    use CreatedFromIpAware;
 
     #[ORM\ManyToOne(targetEntity: CommandConfig::class)]
     #[ORM\JoinColumn(nullable: false, onDelete: 'CASCADE')]
     private ?CommandConfig $commandConfig = null;
 
     #[ORM\Column(type: Types::STRING, length: 64, nullable: false, options: ['comment' => '使用用户ID'])]
+    #[Assert\NotBlank(message: '用户ID不能为空')]
+    #[Assert\Length(max: 64, maxMessage: '用户ID不能超过64个字符')]
     private ?string $userId = null;
 
     #[ORM\Column(type: Types::TEXT, options: ['comment' => '使用的口令内容'])]
+    #[Assert\NotBlank(message: '口令内容不能为空')]
+    #[Assert\Length(min: 1, max: 1000, minMessage: '口令内容至少需要1个字符', maxMessage: '口令内容不能超过1000个字符')]
     private ?string $commandText = null;
 
     #[ORM\Column(type: Types::STRING, length: 64, nullable: true, options: ['comment' => '获得的优惠券ID'])]
+    #[Assert\Length(max: 64, maxMessage: '优惠券ID不能超过64个字符')]
     private ?string $couponId = null;
 
     #[ORM\Column(type: Types::BOOLEAN, nullable: false, options: ['comment' => '是否使用成功', 'default' => false])]
+    #[Assert\Type(type: 'bool', message: '使用状态必须是布尔值')]
     private bool $isSuccess = false;
 
     #[ORM\Column(type: Types::STRING, length: 255, nullable: true, options: ['comment' => '失败原因'])]
+    #[Assert\Length(max: 255, maxMessage: '失败原因不能超过255个字符')]
     private ?string $failureReason = null;
 
+    /**
+     * @var array<string, mixed>|null
+     */
     #[ORM\Column(type: Types::JSON, nullable: true, options: ['comment' => '额外信息'])]
+    #[Assert\Type(type: 'array', message: '额外信息必须是数组')]
     private ?array $extraData = null;
-
-
-    #[CreateIpColumn]
-    #[ORM\Column(length: 128, nullable: true, options: ['comment' => '创建时IP'])]
-    private ?string $createdFromIp = null;
-
 
     public function getCommandConfig(): ?CommandConfig
     {
         return $this->commandConfig;
     }
 
-    public function setCommandConfig(?CommandConfig $commandConfig): self
+    public function setCommandConfig(?CommandConfig $commandConfig): void
     {
         $this->commandConfig = $commandConfig;
-
-        return $this;
     }
 
     public function getUserId(): ?string
@@ -65,11 +72,9 @@ class CommandUsageRecord implements ApiArrayInterface, \Stringable
         return $this->userId;
     }
 
-    public function setUserId(?string $userId): self
+    public function setUserId(?string $userId): void
     {
         $this->userId = $userId;
-
-        return $this;
     }
 
     public function getCommandText(): ?string
@@ -77,11 +82,9 @@ class CommandUsageRecord implements ApiArrayInterface, \Stringable
         return $this->commandText;
     }
 
-    public function setCommandText(?string $commandText): self
+    public function setCommandText(?string $commandText): void
     {
         $this->commandText = $commandText;
-
-        return $this;
     }
 
     public function getCouponId(): ?string
@@ -89,11 +92,9 @@ class CommandUsageRecord implements ApiArrayInterface, \Stringable
         return $this->couponId;
     }
 
-    public function setCouponId(?string $couponId): self
+    public function setCouponId(?string $couponId): void
     {
         $this->couponId = $couponId;
-
-        return $this;
     }
 
     public function isSuccess(): bool
@@ -101,11 +102,24 @@ class CommandUsageRecord implements ApiArrayInterface, \Stringable
         return $this->isSuccess;
     }
 
-    public function setIsSuccess(bool $isSuccess): self
+    public function getSuccess(): bool
+    {
+        return $this->isSuccess;
+    }
+
+    public function setIsSuccess(bool $isSuccess): void
     {
         $this->isSuccess = $isSuccess;
+    }
 
-        return $this;
+    public function setSuccess(bool $isSuccess): void
+    {
+        $this->isSuccess = $isSuccess;
+    }
+
+    public function setCreateTime(?\DateTimeImmutable $createTime): void
+    {
+        $this->createTime = $createTime;
     }
 
     public function getFailureReason(): ?string
@@ -113,38 +127,38 @@ class CommandUsageRecord implements ApiArrayInterface, \Stringable
         return $this->failureReason;
     }
 
-    public function setFailureReason(?string $failureReason): self
+    public function setFailureReason(?string $failureReason): void
     {
         $this->failureReason = $failureReason;
-
-        return $this;
     }
 
+    /** @return array<string, mixed>|null */
     public function getExtraData(): ?array
     {
         return $this->extraData;
     }
 
-    public function setExtraData(?array $extraData): self
+    /**
+     * 为 EasyAdmin 提供字符串表示
+     */
+    public function getExtraDataDisplay(): string
+    {
+        if (!is_array($this->extraData)) {
+            return '';
+        }
+
+        $encoded = json_encode($this->extraData, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
+
+        return false !== $encoded ? $encoded : '';
+    }
+
+    /** @param array<string, mixed>|null $extraData */
+    public function setExtraData(?array $extraData): void
     {
         $this->extraData = $extraData;
-
-        return $this;
     }
 
-
-    public function getCreatedFromIp(): ?string
-    {
-        return $this->createdFromIp;
-    }
-
-    public function setCreatedFromIp(?string $createdFromIp): self
-    {
-        $this->createdFromIp = $createdFromIp;
-
-        return $this;
-    }
-
+    /** @return array<string, mixed> */
     public function retrieveApiArray(): array
     {
         return [
@@ -161,9 +175,9 @@ class CommandUsageRecord implements ApiArrayInterface, \Stringable
 
     public function __toString(): string
     {
-        return sprintf('CommandUsageRecord #%s: User %s used command %s', 
-            $this->id ?? '0', 
-            $this->userId ?? 'N/A', 
+        return sprintf('CommandUsageRecord #%s: User %s used command %s',
+            $this->id ?? '0',
+            $this->userId ?? 'N/A',
             $this->commandText ?? 'N/A'
         );
     }

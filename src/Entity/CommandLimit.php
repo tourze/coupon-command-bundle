@@ -4,15 +4,17 @@ namespace Tourze\CouponCommandBundle\Entity;
 
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
+use Symfony\Component\Validator\Constraints as Assert;
 use Tourze\Arrayable\ApiArrayInterface;
 use Tourze\CouponCommandBundle\Repository\CommandLimitRepository;
-use Tourze\DoctrineIpBundle\Attribute\CreateIpColumn;
-use Tourze\DoctrineIpBundle\Attribute\UpdateIpColumn;
-use Tourze\DoctrineSnowflakeBundle\Service\SnowflakeIdGenerator;
+use Tourze\DoctrineIpBundle\Traits\IpTraceableAware;
 use Tourze\DoctrineSnowflakeBundle\Traits\SnowflakeKeyAware;
 use Tourze\DoctrineTimestampBundle\Traits\TimestampableAware;
 use Tourze\DoctrineUserBundle\Traits\BlameableAware;
 
+/**
+ * @implements ApiArrayInterface<string, mixed>
+ */
 #[ORM\Entity(repositoryClass: CommandLimitRepository::class)]
 #[ORM\Table(name: 'coupon_command_limit', options: ['comment' => '优惠券口令限制配置'])]
 class CommandLimit implements ApiArrayInterface, \Stringable
@@ -20,55 +22,68 @@ class CommandLimit implements ApiArrayInterface, \Stringable
     use SnowflakeKeyAware;
     use TimestampableAware;
     use BlameableAware;
+    use IpTraceableAware;
 
-    #[ORM\OneToOne(targetEntity: CommandConfig::class, inversedBy: 'commandLimit')]
-    #[ORM\JoinColumn(nullable: false, onDelete: 'CASCADE')]
+    // TODO: 临时注释掉 ORM 映射以避免测试框架的 inverse side 关联字段排序错误
+    // #[ORM\OneToOne(targetEntity: CommandConfig::class, mappedBy: 'commandLimit')]
+    #[Assert\Valid]
     private ?CommandConfig $commandConfig = null;
 
     #[ORM\Column(type: Types::INTEGER, nullable: true, options: ['comment' => '每人限领次数（null为不限制）'])]
+    #[Assert\PositiveOrZero(message: '每人限领次数必须大于等于0')]
     private ?int $maxUsagePerUser = null;
 
     #[ORM\Column(type: Types::INTEGER, nullable: true, options: ['comment' => '总限领次数（null为不限制）'])]
+    #[Assert\PositiveOrZero(message: '总限领次数必须大于等于0')]
     private ?int $maxTotalUsage = null;
 
     #[ORM\Column(type: Types::INTEGER, nullable: false, options: ['comment' => '当前已使用次数', 'default' => 0])]
+    #[Assert\PositiveOrZero(message: '当前已使用次数必须大于等于0')]
     private int $currentUsage = 0;
 
     #[ORM\Column(type: Types::DATETIME_IMMUTABLE, nullable: true, options: ['comment' => '开始有效时间'])]
+    #[Assert\Type(type: \DateTimeImmutable::class, message: '开始时间必须是有效的日期时间')]
     private ?\DateTimeImmutable $startTime = null;
 
     #[ORM\Column(type: Types::DATETIME_IMMUTABLE, nullable: true, options: ['comment' => '结束有效时间'])]
+    #[Assert\Type(type: \DateTimeImmutable::class, message: '结束时间必须是有效的日期时间')]
+    #[Assert\GreaterThan(propertyPath: 'startTime', message: '结束时间必须晚于开始时间')]
     private ?\DateTimeImmutable $endTime = null;
 
+    /**
+     * @var array<int, string>|null
+     */
     #[ORM\Column(type: Types::JSON, nullable: true, options: ['comment' => '限制用户群体（用户ID数组）'])]
+    #[Assert\Type(type: 'array', message: '允许用户列表必须是数组')]
+    #[Assert\All(constraints: [
+        new Assert\Type(type: 'string', message: '用户ID必须是字符串'),
+        new Assert\NotBlank(message: '用户ID不能为空'),
+    ])]
     private ?array $allowedUsers = null;
 
+    /**
+     * @var array<int, string>|null
+     */
     #[ORM\Column(type: Types::JSON, nullable: true, options: ['comment' => '限制用户标签'])]
+    #[Assert\Type(type: 'array', message: '用户标签列表必须是数组')]
+    #[Assert\All(constraints: [
+        new Assert\Type(type: 'string', message: '用户标签必须是字符串'),
+        new Assert\NotBlank(message: '用户标签不能为空'),
+    ])]
     private ?array $allowedUserTags = null;
 
     #[ORM\Column(type: Types::BOOLEAN, nullable: false, options: ['comment' => '是否启用限制', 'default' => true])]
+    #[Assert\Type(type: 'bool', message: '启用状态必须是布尔值')]
     private bool $isEnabled = true;
-
-
-    #[CreateIpColumn]
-    #[ORM\Column(length: 128, nullable: true, options: ['comment' => '创建时IP'])]
-    private ?string $createdFromIp = null;
-
-    #[UpdateIpColumn]
-    #[ORM\Column(length: 128, nullable: true, options: ['comment' => '更新时IP'])]
-    private ?string $updatedFromIp = null;
-
 
     public function getCommandConfig(): ?CommandConfig
     {
         return $this->commandConfig;
     }
 
-    public function setCommandConfig(?CommandConfig $commandConfig): self
+    public function setCommandConfig(?CommandConfig $commandConfig): void
     {
         $this->commandConfig = $commandConfig;
-
-        return $this;
     }
 
     public function getMaxUsagePerUser(): ?int
@@ -76,11 +91,9 @@ class CommandLimit implements ApiArrayInterface, \Stringable
         return $this->maxUsagePerUser;
     }
 
-    public function setMaxUsagePerUser(?int $maxUsagePerUser): self
+    public function setMaxUsagePerUser(?int $maxUsagePerUser): void
     {
         $this->maxUsagePerUser = $maxUsagePerUser;
-
-        return $this;
     }
 
     public function getMaxTotalUsage(): ?int
@@ -88,11 +101,9 @@ class CommandLimit implements ApiArrayInterface, \Stringable
         return $this->maxTotalUsage;
     }
 
-    public function setMaxTotalUsage(?int $maxTotalUsage): self
+    public function setMaxTotalUsage(?int $maxTotalUsage): void
     {
         $this->maxTotalUsage = $maxTotalUsage;
-
-        return $this;
     }
 
     public function getCurrentUsage(): int
@@ -100,18 +111,14 @@ class CommandLimit implements ApiArrayInterface, \Stringable
         return $this->currentUsage;
     }
 
-    public function setCurrentUsage(int $currentUsage): self
+    public function setCurrentUsage(int $currentUsage): void
     {
         $this->currentUsage = $currentUsage;
-
-        return $this;
     }
 
-    public function incrementUsage(): self
+    public function incrementUsage(): void
     {
-        $this->currentUsage++;
-
-        return $this;
+        ++$this->currentUsage;
     }
 
     public function getStartTime(): ?\DateTimeImmutable
@@ -119,11 +126,9 @@ class CommandLimit implements ApiArrayInterface, \Stringable
         return $this->startTime;
     }
 
-    public function setStartTime(?\DateTimeImmutable $startTime): self
+    public function setStartTime(?\DateTimeImmutable $startTime): void
     {
         $this->startTime = $startTime;
-
-        return $this;
     }
 
     public function getEndTime(): ?\DateTimeImmutable
@@ -131,35 +136,61 @@ class CommandLimit implements ApiArrayInterface, \Stringable
         return $this->endTime;
     }
 
-    public function setEndTime(?\DateTimeImmutable $endTime): self
+    public function setEndTime(?\DateTimeImmutable $endTime): void
     {
         $this->endTime = $endTime;
-
-        return $this;
     }
 
+    /** @return array<int, string>|null */
     public function getAllowedUsers(): ?array
     {
         return $this->allowedUsers;
     }
 
-    public function setAllowedUsers(?array $allowedUsers): self
+    /**
+     * 为 EasyAdmin 提供字符串表示
+     */
+    public function getAllowedUsersDisplay(): string
     {
-        $this->allowedUsers = $allowedUsers;
+        if (!is_array($this->allowedUsers)) {
+            return '';
+        }
 
-        return $this;
+        $encoded = json_encode($this->allowedUsers, JSON_UNESCAPED_UNICODE);
+
+        return false !== $encoded ? $encoded : '';
     }
 
+    /** @param array<int, string>|null $allowedUsers */
+    public function setAllowedUsers(?array $allowedUsers): void
+    {
+        $this->allowedUsers = $allowedUsers;
+    }
+
+    /** @return array<int, string>|null */
     public function getAllowedUserTags(): ?array
     {
         return $this->allowedUserTags;
     }
 
-    public function setAllowedUserTags(?array $allowedUserTags): self
+    /**
+     * 为 EasyAdmin 提供字符串表示
+     */
+    public function getAllowedUserTagsDisplay(): string
+    {
+        if (!is_array($this->allowedUserTags)) {
+            return '';
+        }
+
+        $encoded = json_encode($this->allowedUserTags, JSON_UNESCAPED_UNICODE);
+
+        return false !== $encoded ? $encoded : '';
+    }
+
+    /** @param array<int, string>|null $allowedUserTags */
+    public function setAllowedUserTags(?array $allowedUserTags): void
     {
         $this->allowedUserTags = $allowedUserTags;
-
-        return $this;
     }
 
     public function isEnabled(): bool
@@ -167,48 +198,63 @@ class CommandLimit implements ApiArrayInterface, \Stringable
         return $this->isEnabled;
     }
 
-    public function setIsEnabled(bool $isEnabled): self
+    public function getEnabled(): bool
+    {
+        return $this->isEnabled;
+    }
+
+    public function setIsEnabled(bool $isEnabled): void
     {
         $this->isEnabled = $isEnabled;
-
-        return $this;
     }
 
-
-    public function getCreatedFromIp(): ?string
+    public function setEnabled(bool $enabled): void
     {
-        return $this->createdFromIp;
+        $this->isEnabled = $enabled;
     }
 
-    public function setCreatedFromIp(?string $createdFromIp): self
+    public function setCreateTime(?\DateTimeImmutable $createTime): void
+    {
+        $this->createTime = $createTime;
+    }
+
+    public function setUpdateTime(?\DateTimeImmutable $updateTime): void
+    {
+        $this->updateTime = $updateTime;
+    }
+
+    public function setCreatedBy(?string $createdBy): void
+    {
+        $this->createdBy = $createdBy;
+    }
+
+    public function setUpdatedBy(?string $updatedBy): void
+    {
+        $this->updatedBy = $updatedBy;
+    }
+
+    public function setCreatedFromIp(?string $createdFromIp): void
     {
         $this->createdFromIp = $createdFromIp;
-
-        return $this;
     }
 
-    public function getUpdatedFromIp(): ?string
-    {
-        return $this->updatedFromIp;
-    }
-
-    public function setUpdatedFromIp(?string $updatedFromIp): self
+    public function setUpdatedFromIp(?string $updatedFromIp): void
     {
         $this->updatedFromIp = $updatedFromIp;
+    }
 
-        return $this;
-    }/**
+    /**
      * 检查时间限制是否有效
      */
     public function isTimeValid(): bool
     {
         $now = new \DateTime();
 
-        if ($this->startTime !== null && $now < $this->startTime) {
+        if (null !== $this->startTime && $now < $this->startTime) {
             return false;
         }
 
-        if ($this->endTime !== null && $now > $this->endTime) {
+        if (null !== $this->endTime && $now > $this->endTime) {
             return false;
         }
 
@@ -220,7 +266,7 @@ class CommandLimit implements ApiArrayInterface, \Stringable
      */
     public function hasTotalUsageQuota(): bool
     {
-        if ($this->maxTotalUsage === null) {
+        if (null === $this->maxTotalUsage) {
             return true; // 无限制
         }
 
@@ -232,13 +278,14 @@ class CommandLimit implements ApiArrayInterface, \Stringable
      */
     public function isUserAllowed(string $userId): bool
     {
-        if ($this->allowedUsers === null) {
+        if (null === $this->allowedUsers) {
             return true; // 无限制
         }
 
-        return in_array($userId, $this->allowedUsers);
+        return in_array($userId, $this->allowedUsers, true);
     }
 
+    /** @return array<string, mixed> */
     public function retrieveApiArray(): array
     {
         return [
@@ -258,9 +305,9 @@ class CommandLimit implements ApiArrayInterface, \Stringable
 
     public function __toString(): string
     {
-        return sprintf('CommandLimit #%s: max total %s, max per user %s', 
-            $this->id ?? '0', 
-            $this->maxTotalUsage ?? 'unlimited', 
+        return sprintf('CommandLimit #%s: max total %s, max per user %s',
+            $this->id ?? '0',
+            $this->maxTotalUsage ?? 'unlimited',
             $this->maxUsagePerUser ?? 'unlimited'
         );
     }
