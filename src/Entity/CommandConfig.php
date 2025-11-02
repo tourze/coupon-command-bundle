@@ -58,36 +58,6 @@ class CommandConfig implements ApiArrayInterface, \Stringable
         $this->usageRecords = new ArrayCollection();
     }
 
-    public function setCreateTime(?\DateTimeImmutable $createTime): void
-    {
-        $this->createTime = $createTime;
-    }
-
-    public function setUpdateTime(?\DateTimeImmutable $updateTime): void
-    {
-        $this->updateTime = $updateTime;
-    }
-
-    public function setCreatedBy(?string $createdBy): void
-    {
-        $this->createdBy = $createdBy;
-    }
-
-    public function setUpdatedBy(?string $updatedBy): void
-    {
-        $this->updatedBy = $updatedBy;
-    }
-
-    public function setCreatedFromIp(?string $createdFromIp): void
-    {
-        $this->createdFromIp = $createdFromIp;
-    }
-
-    public function setUpdatedFromIp(?string $updatedFromIp): void
-    {
-        $this->updatedFromIp = $updatedFromIp;
-    }
-
     public function getCoupon(): ?Coupon
     {
         return $this->coupon;

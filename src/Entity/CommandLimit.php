@@ -213,36 +213,6 @@ class CommandLimit implements ApiArrayInterface, \Stringable
         $this->isEnabled = $enabled;
     }
 
-    public function setCreateTime(?\DateTimeImmutable $createTime): void
-    {
-        $this->createTime = $createTime;
-    }
-
-    public function setUpdateTime(?\DateTimeImmutable $updateTime): void
-    {
-        $this->updateTime = $updateTime;
-    }
-
-    public function setCreatedBy(?string $createdBy): void
-    {
-        $this->createdBy = $createdBy;
-    }
-
-    public function setUpdatedBy(?string $updatedBy): void
-    {
-        $this->updatedBy = $updatedBy;
-    }
-
-    public function setCreatedFromIp(?string $createdFromIp): void
-    {
-        $this->createdFromIp = $createdFromIp;
-    }
-
-    public function setUpdatedFromIp(?string $updatedFromIp): void
-    {
-        $this->updatedFromIp = $updatedFromIp;
-    }
-
     /**
      * 检查时间限制是否有效
      */
