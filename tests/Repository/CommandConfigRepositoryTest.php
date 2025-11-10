@@ -201,10 +201,9 @@ final class CommandConfigRepositoryTest extends AbstractRepositoryTestCase
     }
 
     /**
-     * 辅助方法：正确设置 CommandConfig 和 Coupon 之间的双向关联关系
+     * 辅助方法：设置 CommandConfig 和 Coupon 之间的关联关系
      *
-     * 注意：由于没有cascade配置，需要手动persist两个实体
-     * owning side是Coupon，inverse side是CommandConfig
+     * 注意：这是单向关联（CommandConfig -> Coupon），需要手动persist两个实体
      */
     private function setupBidirectionalAssociation(CommandConfig $commandConfig, Coupon $coupon): void
     {
@@ -212,13 +211,11 @@ final class CommandConfigRepositoryTest extends AbstractRepositoryTestCase
         self::getEntityManager()->persist($coupon);
         self::getEntityManager()->flush();
 
-        // 设置双向关联
+        // 设置单向关联
         $commandConfig->setCoupon($coupon);
-        $coupon->setCommandConfig($commandConfig);
 
-        // 再persist CommandConfig
+        // persist CommandConfig
         self::getEntityManager()->persist($commandConfig);
-        self::getEntityManager()->persist($coupon); // 更新Coupon的关联
     }
 
     public function testRemoveMethod(): void

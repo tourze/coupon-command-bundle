@@ -36,14 +36,12 @@ class CommandConfigRepository extends ServiceEntityRepository
     /**
      * 根据优惠券ID查找口令配置
      *
-     * 注意：由于 coupon 是 inverse side 关联，我们需要通过 owning side 来查询
-     * 这里我们通过 Coupon 实体的 commandConfig 字段来查找
+     * 注意：这是单向关联（CommandConfig -> Coupon），直接通过 coupon 字段查询
      */
     public function findByCouponId(string $couponId): ?CommandConfig
     {
         $result = $this->createQueryBuilder('c')
-            ->innerJoin('Tourze\CouponCoreBundle\Entity\Coupon', 'coupon', 'WITH', 'coupon.commandConfig = c')
-            ->andWhere('coupon.id = :couponId')
+            ->andWhere('c.coupon = :couponId')
             ->setParameter('couponId', $couponId)
             ->getQuery()
             ->getOneOrNullResult()

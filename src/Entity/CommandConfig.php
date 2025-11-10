@@ -28,10 +28,13 @@ class CommandConfig implements ApiArrayInterface, \Stringable
     use BlameableAware;
     use IpTraceableAware;
 
+    /**
+     * 关联的优惠券（单向 OneToOne，CommandConfig 是 owning side）
+     * 注意：这是单向关联，不需要在 Coupon 实体中添加反向字段
+     */
     #[Ignore]
-    // TODO: 临时注释掉 ORM 映射以避免测试框架的 inverse side 关联字段排序错误
-    // 这个字段通过 getter/setter 手动维护关联关系
-    // #[ORM\OneToOne(targetEntity: Coupon::class, mappedBy: 'commandConfig')]
+    #[ORM\OneToOne(targetEntity: Coupon::class)]
+    #[ORM\JoinColumn(name: 'coupon_id', referencedColumnName: 'id', nullable: true)]
     #[Assert\Valid]
     private ?Coupon $coupon = null;
 
